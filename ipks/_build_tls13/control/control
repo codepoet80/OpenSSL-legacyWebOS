@@ -1,0 +1,16 @@
+Package: org.webosinternals.browser-tls13
+Version: 1.0.1
+Architecture: armv7
+Maintainer: Herrie <herrie82@gmail.com>
+Section: misc
+Priority: optional
+Depends:
+InstalledSize: 3836000
+Description: Modern TLS 1.2/1.3 for the stock webOS TouchPad browser.
+ Installs a process-private OpenSSL 1.1.1w + curl (with zlib) under
+ /usr/lib/ssl11 and wires it into BrowserServer via LD_LIBRARY_PATH. The two
+ custom OpenSSL libs relocate ssl->ctx (0xD8) and X509_STORE_CTX->cert (0x8) to
+ the offsets libWebKitLuna hardcodes, so the browser's cert callback works.
+ No system binary is modified and the User-Agent is left at the webOS default.
+ NOTE: requires a current CA bundle in /etc/ssl/certs/ca-certificates.crt
+ (install your Mozilla ca-certificates ipk).

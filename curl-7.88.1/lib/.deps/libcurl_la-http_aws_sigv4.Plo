@@ -1,0 +1,367 @@
+libcurl_la-http_aws_sigv4.lo: http_aws_sigv4.c curl_setup.h curl_config.h \
+  ../include/curl/system.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/types.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/features.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/predefs.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/cdefs.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/wordsize.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/gnu/stubs.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/types.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stddef.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/typesizes.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/time.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/endian.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/endian.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/select.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/select.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sigset.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/time.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/sys/sysmacros.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/pthreadtypes.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/socket.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/uio.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/uio.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/socket.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/limits.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/syslimits.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/limits.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix1_lim.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/local_lim.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/linux/limits.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix2_lim.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sockaddr.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/socket.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/sockios.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/stdio.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/libio.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/_G_config.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/wchar.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/wchar.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/gconv.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stdarg.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/stdio_lim.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sys_errlist.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/assert.h curl_setup_once.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/stdlib.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/alloca.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/string.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/string.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/bits/string2.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/linux/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm-generic/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm-generic/errno-base.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/sys/stat.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/stat.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/time.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stdbool.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/unistd.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix_opt.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/confname.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/getopt.h functypes.h \
+  curl_ctype.h urldata.h cookie.h ../include/curl/curl.h \
+  ../include/curl/curlver.h ../include/curl/system.h \
+  ../include/curl/easy.h ../include/curl/multi.h ../include/curl/curl.h \
+  ../include/curl/urlapi.h ../include/curl/options.h \
+  ../include/curl/header.h ../include/curl/websockets.h \
+  ../include/curl/typecheck-gcc.h psl.h formdata.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/netinet/in.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/stdint.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/in.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/byteswap.h timeval.h \
+  timediff.h http_chunks.h hostip.h hash.h llist.h curl_addrinfo.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/netdb.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/rpc/netdb.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/netdb.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/arpa/inet.h asyn.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/setjmp.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/setjmp.h splay.h \
+  dynbuf.h mime.h imap.h pingpong.h curl_sasl.h bufref.h pop3.h smtp.h \
+  ftp.h file.h vssh/ssh.h ../lib/curl_setup.h http.h ws.h rtsp.h smb.h \
+  mqtt.h wildcard.h multihandle.h conncache.h socketpair.h c-hyper.h \
+  cf-socket.h nonblock.h sockaddr.h strcase.h strdup.h http_aws_sigv4.h \
+  curl_sha256.h curl_hmac.h transfer.h parsedate.h sendf.h curl_log.h \
+  curl_printf.h ../include/curl/mprintf.h curl_memory.h memdebug.h \
+  slist.h
+
+curl_setup.h:
+
+curl_config.h:
+
+../include/curl/system.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/types.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/features.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/predefs.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/cdefs.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/wordsize.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/gnu/stubs.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/types.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stddef.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/typesizes.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/time.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/endian.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/endian.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/select.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/select.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sigset.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/time.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/sys/sysmacros.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/pthreadtypes.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/socket.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/uio.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/uio.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/socket.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/limits.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/syslimits.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/limits.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix1_lim.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/local_lim.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/linux/limits.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix2_lim.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sockaddr.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/socket.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/sockios.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/stdio.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/libio.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/_G_config.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/wchar.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/wchar.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/gconv.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stdarg.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/stdio_lim.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sys_errlist.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/assert.h:
+
+curl_setup_once.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/stdlib.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/alloca.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/string.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/string.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/bits/string2.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/linux/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm-generic/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm-generic/errno-base.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/sys/stat.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/stat.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/time.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stdbool.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/unistd.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix_opt.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/confname.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/getopt.h:
+
+functypes.h:
+
+curl_ctype.h:
+
+urldata.h:
+
+cookie.h:
+
+../include/curl/curl.h:
+
+../include/curl/curlver.h:
+
+../include/curl/system.h:
+
+../include/curl/easy.h:
+
+../include/curl/multi.h:
+
+../include/curl/curl.h:
+
+../include/curl/urlapi.h:
+
+../include/curl/options.h:
+
+../include/curl/header.h:
+
+../include/curl/websockets.h:
+
+../include/curl/typecheck-gcc.h:
+
+psl.h:
+
+formdata.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/netinet/in.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/stdint.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/in.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/byteswap.h:
+
+timeval.h:
+
+timediff.h:
+
+http_chunks.h:
+
+hostip.h:
+
+hash.h:
+
+llist.h:
+
+curl_addrinfo.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/netdb.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/rpc/netdb.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/netdb.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/arpa/inet.h:
+
+asyn.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/setjmp.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/setjmp.h:
+
+splay.h:
+
+dynbuf.h:
+
+mime.h:
+
+imap.h:
+
+pingpong.h:
+
+curl_sasl.h:
+
+bufref.h:
+
+pop3.h:
+
+smtp.h:
+
+ftp.h:
+
+file.h:
+
+vssh/ssh.h:
+
+../lib/curl_setup.h:
+
+http.h:
+
+ws.h:
+
+rtsp.h:
+
+smb.h:
+
+mqtt.h:
+
+wildcard.h:
+
+multihandle.h:
+
+conncache.h:
+
+socketpair.h:
+
+c-hyper.h:
+
+cf-socket.h:
+
+nonblock.h:
+
+sockaddr.h:
+
+strcase.h:
+
+strdup.h:
+
+http_aws_sigv4.h:
+
+curl_sha256.h:
+
+curl_hmac.h:
+
+transfer.h:
+
+parsedate.h:
+
+sendf.h:
+
+curl_log.h:
+
+curl_printf.h:
+
+../include/curl/mprintf.h:
+
+curl_memory.h:
+
+memdebug.h:
+
+slist.h:

@@ -1,0 +1,557 @@
+vauth/libcurl_la-ntlm.lo: vauth/ntlm.c ../lib/curl_setup.h \
+  ../lib/curl_config.h ../include/curl/system.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/types.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/features.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/predefs.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/cdefs.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/wordsize.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/gnu/stubs.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/types.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stddef.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/typesizes.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/time.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/endian.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/endian.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/select.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/select.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sigset.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/time.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/sys/sysmacros.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/pthreadtypes.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/socket.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/uio.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/uio.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/socket.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/limits.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/syslimits.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/limits.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix1_lim.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/local_lim.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/linux/limits.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix2_lim.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sockaddr.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/socket.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/sockios.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/stdio.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/libio.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/_G_config.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/wchar.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/wchar.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/gconv.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stdarg.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/stdio_lim.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sys_errlist.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/assert.h \
+  ../lib/curl_setup_once.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/stdlib.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/alloca.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/string.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/string.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/bits/string2.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/linux/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm-generic/errno.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/asm-generic/errno-base.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/sys/stat.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/stat.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/time.h \
+  /opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stdbool.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/unistd.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix_opt.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/confname.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/getopt.h ../lib/functypes.h \
+  ../lib/curl_setup.h ../lib/curl_ctype.h ../lib/urldata.h \
+  ../lib/cookie.h ../include/curl/curl.h ../include/curl/curlver.h \
+  ../include/curl/system.h ../include/curl/easy.h ../include/curl/multi.h \
+  ../include/curl/curl.h ../include/curl/urlapi.h \
+  ../include/curl/options.h ../include/curl/header.h \
+  ../include/curl/websockets.h ../include/curl/typecheck-gcc.h \
+  ../lib/psl.h ../lib/formdata.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/netinet/in.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/stdint.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/in.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/byteswap.h \
+  ../lib/timeval.h ../lib/timediff.h ../lib/http_chunks.h ../lib/hostip.h \
+  ../lib/hash.h ../lib/llist.h ../lib/curl_addrinfo.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/netdb.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/rpc/netdb.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/netdb.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/arpa/inet.h ../lib/asyn.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/setjmp.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/setjmp.h ../lib/splay.h \
+  ../lib/dynbuf.h ../lib/mime.h ../lib/imap.h ../lib/pingpong.h \
+  ../lib/curl_sasl.h ../lib/bufref.h ../lib/pop3.h ../lib/smtp.h \
+  ../lib/ftp.h ../lib/file.h ../lib/vssh/ssh.h ../lib/http.h ../lib/ws.h \
+  ../lib/rtsp.h ../lib/smb.h ../lib/mqtt.h ../lib/wildcard.h \
+  ../lib/multihandle.h ../lib/conncache.h ../lib/socketpair.h \
+  ../lib/c-hyper.h ../lib/cf-socket.h ../lib/nonblock.h ../lib/sockaddr.h \
+  ../lib/sendf.h ../lib/curl_log.h ../lib/curl_ntlm_core.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ssl.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/e_os2.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/opensslconf.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/opensslv.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/inttypes.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/comp.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/crypto.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/safestack.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/stack.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ossl_typ.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/cryptoerr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/symhacks.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/pthread.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/sched.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sched.h \
+  /opt/PalmPDK/arm-gcc/sysroot//usr/include/signal.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/comperr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/bio.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/bioerr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/x509.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/buffer.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/buffererr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/evp.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/evperr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/objects.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/obj_mac.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/asn1.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/asn1err.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/bn.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/bnerr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/objectserr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ec.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ecerr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/rsa.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/rsaerr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dsa.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dh.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dherr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dsaerr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/sha.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/x509err.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/x509_vfy.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/lhash.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/pkcs7.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/pkcs7err.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/pem.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/pemerr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/hmac.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/async.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/asyncerr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ct.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/cterr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/sslerr.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ssl2.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ssl3.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/tls1.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dtls1.h \
+  /home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/srtp.h \
+  ../lib/curl_gethostname.h ../lib/curl_multibyte.h ../lib/curl_md5.h \
+  ../lib/curl_hmac.h ../lib/warnless.h ../lib/rand.h ../lib/vtls/vtls.h \
+  ../lib/vauth/vauth.h ../lib/bufref.h ../lib/vauth/ntlm.h \
+  ../lib/curl_endian.h ../lib/curl_printf.h ../include/curl/mprintf.h \
+  ../lib/curl_memory.h ../lib/memdebug.h
+
+../lib/curl_setup.h:
+
+../lib/curl_config.h:
+
+../include/curl/system.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/types.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/features.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/predefs.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/cdefs.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/wordsize.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/gnu/stubs.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/types.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stddef.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/typesizes.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/time.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/endian.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/endian.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/select.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/select.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sigset.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/time.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/sys/sysmacros.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/pthreadtypes.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/socket.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/uio.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/uio.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/socket.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/limits.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/syslimits.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/limits.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix1_lim.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/local_lim.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/linux/limits.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix2_lim.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sockaddr.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/socket.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/sockios.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/stdio.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/libio.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/_G_config.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/wchar.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/wchar.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/gconv.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stdarg.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/stdio_lim.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sys_errlist.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/assert.h:
+
+../lib/curl_setup_once.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/stdlib.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/alloca.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/string.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/string.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/bits/string2.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/linux/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm-generic/errno.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/asm-generic/errno-base.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include-fixed/sys/stat.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/stat.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sys/time.h:
+
+/opt/PalmPDK/arm-gcc/bin/../lib/gcc/arm-none-linux-gnueabi/4.3.3/include/stdbool.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/unistd.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/posix_opt.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/confname.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/getopt.h:
+
+../lib/functypes.h:
+
+../lib/curl_setup.h:
+
+../lib/curl_ctype.h:
+
+../lib/urldata.h:
+
+../lib/cookie.h:
+
+../include/curl/curl.h:
+
+../include/curl/curlver.h:
+
+../include/curl/system.h:
+
+../include/curl/easy.h:
+
+../include/curl/multi.h:
+
+../include/curl/curl.h:
+
+../include/curl/urlapi.h:
+
+../include/curl/options.h:
+
+../include/curl/header.h:
+
+../include/curl/websockets.h:
+
+../include/curl/typecheck-gcc.h:
+
+../lib/psl.h:
+
+../lib/formdata.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/netinet/in.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/stdint.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/in.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/byteswap.h:
+
+../lib/timeval.h:
+
+../lib/timediff.h:
+
+../lib/http_chunks.h:
+
+../lib/hostip.h:
+
+../lib/hash.h:
+
+../lib/llist.h:
+
+../lib/curl_addrinfo.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/netdb.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/rpc/netdb.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/netdb.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/arpa/inet.h:
+
+../lib/asyn.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/setjmp.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/setjmp.h:
+
+../lib/splay.h:
+
+../lib/dynbuf.h:
+
+../lib/mime.h:
+
+../lib/imap.h:
+
+../lib/pingpong.h:
+
+../lib/curl_sasl.h:
+
+../lib/bufref.h:
+
+../lib/pop3.h:
+
+../lib/smtp.h:
+
+../lib/ftp.h:
+
+../lib/file.h:
+
+../lib/vssh/ssh.h:
+
+../lib/http.h:
+
+../lib/ws.h:
+
+../lib/rtsp.h:
+
+../lib/smb.h:
+
+../lib/mqtt.h:
+
+../lib/wildcard.h:
+
+../lib/multihandle.h:
+
+../lib/conncache.h:
+
+../lib/socketpair.h:
+
+../lib/c-hyper.h:
+
+../lib/cf-socket.h:
+
+../lib/nonblock.h:
+
+../lib/sockaddr.h:
+
+../lib/sendf.h:
+
+../lib/curl_log.h:
+
+../lib/curl_ntlm_core.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ssl.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/e_os2.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/opensslconf.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/opensslv.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/inttypes.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/comp.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/crypto.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/safestack.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/stack.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ossl_typ.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/cryptoerr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/symhacks.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/pthread.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/sched.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/bits/sched.h:
+
+/opt/PalmPDK/arm-gcc/sysroot//usr/include/signal.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/comperr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/bio.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/bioerr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/x509.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/buffer.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/buffererr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/evp.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/evperr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/objects.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/obj_mac.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/asn1.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/asn1err.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/bn.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/bnerr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/objectserr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ec.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ecerr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/rsa.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/rsaerr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dsa.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dh.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dherr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dsaerr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/sha.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/x509err.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/x509_vfy.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/lhash.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/pkcs7.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/pkcs7err.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/pem.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/pemerr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/hmac.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/async.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/asyncerr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ct.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/cterr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/sslerr.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ssl2.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/ssl3.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/tls1.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/dtls1.h:
+
+/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update/openssl-1.1.1w/include/openssl/srtp.h:
+
+../lib/curl_gethostname.h:
+
+../lib/curl_multibyte.h:
+
+../lib/curl_md5.h:
+
+../lib/curl_hmac.h:
+
+../lib/warnless.h:
+
+../lib/rand.h:
+
+../lib/vtls/vtls.h:
+
+../lib/vauth/vauth.h:
+
+../lib/bufref.h:
+
+../lib/vauth/ntlm.h:
+
+../lib/curl_endian.h:
+
+../lib/curl_printf.h:
+
+../include/curl/mprintf.h:
+
+../lib/curl_memory.h:
+
+../lib/memdebug.h:

@@ -1,0 +1,26 @@
+#!/bin/sh
+mount -o remount,rw / 2>/dev/null || true
+
+# 1. inject ssl11 env into the browser upstart job(s)
+for job in /etc/event.d/browserserver /etc/event.d/browserservermojo; do
+    [ -f "$job" ] || continue
+    [ -f "$job.tls13-orig" ] || cp -p "$job" "$job.tls13-orig"
+    if ! grep -q 'ssl11' "$job"; then
+        awk '/LD_PRELOAD=.*libptmalloc3/ && !i {
+               print "    export LD_PRELOAD=\"/usr/lib/libptmalloc3.so /usr/lib/ssl11/libssl_compat.so\""
+               print "    # ssl11 browser TLS1.3"
+               print "    export LD_LIBRARY_PATH=\"/usr/lib/ssl11:${LD_LIBRARY_PATH}\""
+               i=1; next } { print }' "$job.tls13-orig" > "$job.tmp" && mv "$job.tmp" "$job"
+    fi
+done
+
+# 2. warn if no modern CA bundle
+n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null || echo 0)
+[ "$n" -lt 50 ] && echo "WARNING: /etc/ssl/certs/ca-certificates.crt has only $n certs - install a current Mozilla CA bundle or cert validation will fail."
+
+# 3. restart browser
+stop browserserver 2>/dev/null || true
+stop browserservermojo 2>/dev/null || true
+start browserserver 2>/dev/null || true
+start browserservermojo 2>/dev/null || true
+exit 0

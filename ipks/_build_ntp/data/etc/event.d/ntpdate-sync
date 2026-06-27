@@ -1,0 +1,25 @@
+# NTP time sync for webOS TouchPad
+# webOS's built-in time sync targets dead palm.com servers, so the clock
+# free-runs and drifts (breaking TLS cert validity windows). This job syncs
+# from public NTP at boot (with retries while Wi-Fi comes up) and every 6h.
+
+start on stopped finish
+stop on runlevel [06]
+
+respawn
+respawn limit 0 0
+
+script
+    while true; do
+        i=0
+        while [ $i -lt 12 ]; do
+            if /usr/bin/ntpdate -u -s -b -t 5 pool.ntp.org 0.pool.ntp.org 1.pool.ntp.org ; then
+                /sbin/hwclock -w -f /dev/rtc 2>/dev/null || true
+                break
+            fi
+            i=$((i+1))
+            sleep 5
+        done
+        sleep 21600
+    done
+end script

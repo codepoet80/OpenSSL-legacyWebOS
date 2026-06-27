@@ -1,0 +1,9 @@
+#!/bin/sh
+mount -o remount,rw / 2>/dev/null || true
+for job in /etc/event.d/browserserver /etc/event.d/browserservermojo; do
+    [ -f "$job.tls13-orig" ] && mv -f "$job.tls13-orig" "$job"
+done
+rm -rf /usr/lib/ssl11
+start browserserver 2>/dev/null || true
+start browserservermojo 2>/dev/null || true
+exit 0
