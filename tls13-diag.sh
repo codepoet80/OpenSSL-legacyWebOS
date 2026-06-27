@@ -15,7 +15,11 @@ P "uptime:" "$(cut -d. -f1 /proc/uptime)s"
 P "date:"   "$(date)"
 
 echo "===== package + ssl11 ====="
-P "browser-tls13 pkg:" "$(ipkg list_installed 2>/dev/null | grep -o 'browser-tls13 - [0-9.]*' || echo NOT-INSTALLED)"
+# Check BOTH ipkg dbs: the system db (plain `ipkg install`) AND the App-Manager
+# offline db under /media/cryptofs/apps (Preware / WebOS Quick Install register there).
+pkg=$(ipkg list_installed 2>/dev/null | grep -o 'browser-tls13 - [0-9.]*')
+[ -z "$pkg" ] && pkg=$(awk '/^Package: org.webosinternals.browser-tls13$/{f=1} f&&/^Version:/{print "browser-tls13 - "$2" (app-manager db)"; exit}' /media/cryptofs/apps/usr/lib/ipkg/status 2>/dev/null)
+P "browser-tls13 pkg:" "${pkg:-NOT-INSTALLED (neither db)}"
 if [ -d /usr/lib/ssl11 ]; then P "ssl11 dir:" "present"; else P "ssl11 dir:" "FAIL missing"; fi
 for f in libssl.so.1.1 libcrypto.so.1.1 libcurl.so.4.8.0 libssl_compat.so; do
   P "  $f:" "$(md5 /usr/lib/ssl11/$f)"
@@ -23,8 +27,9 @@ done
 
 echo "===== BrowserServer binary ====="
 bm=$(md5 /usr/bin/BrowserServer)
+BS_OK=0
 case "$bm" in
-  "$RPATH_BS") P "BrowserServer:" "PASS RPATH'd ($bm)";;
+  "$RPATH_BS") P "BrowserServer:" "PASS RPATH'd ($bm)"; BS_OK=1;;
   "$STOCK_BS") P "BrowserServer:" "FAIL still STOCK ($bm) -- RPATH swap did NOT apply (postinst skipped or not installed)";;
   *)           P "BrowserServer:" "WARN unknown build ($bm) -- not the 3.0.5 stock our ipk patches; modern TLS will be SKIPPED on this device";;
 esac
@@ -40,9 +45,11 @@ fi
 
 echo "===== running browser process ====="
 PID=$(pidof BrowserServer | awk '{print $1}')
+MAPS=0
 if [ -n "$PID" ]; then
   P "PID:" "$PID"
-  P "on ssl11 (1.1):" "$(grep -c ssl11 /proc/$PID/maps 2>/dev/null) maps  $( [ "$(grep -c ssl11 /proc/$PID/maps)" -ge 4 ] && echo PASS || echo 'FAIL -- running on OLD 0.9.8!')"
+  MAPS=$(grep -c ssl11 /proc/$PID/maps 2>/dev/null); [ -z "$MAPS" ] && MAPS=0
+  P "on ssl11 (1.1):" "$MAPS maps  $( [ "$MAPS" -ge 4 ] && echo PASS || echo 'FAIL -- running on OLD 0.9.8!')"
   P "real 0.9.8 mapped:" "$(grep -cE '/usr/lib/lib(ssl|crypto)\.so\.0\.9\.8 ' /proc/$PID/maps 2>/dev/null) (want 0)"
 else
   P "PID:" "FAIL not running"
@@ -54,10 +61,13 @@ if [ -n "$strays" ]; then P "stray event.d jobs:" "FAIL upstart runs these as DU
 P "recent 'already exists':" "$(tail -40 /var/log/messages 2>/dev/null | grep -c 'already exists') (high = churn)"
 
 echo "===== CA bundle ====="
-n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null || echo 0)
-isrg=$(grep -c 'ISRG Root X1' /etc/ssl/certs/ca-certificates.crt 2>/dev/null || echo 0)
+CAB=/etc/ssl/certs/ca-certificates.crt
+# NB: no '|| echo 0' -- grep -c already prints 0 on no-match; the old form produced
+# two values ("0\n0") and broke the numeric test below.
+n=$(grep -c 'BEGIN CERTIFICATE' "$CAB" 2>/dev/null); [ -z "$n" ] && n=0
+isrg=$(grep -c 'ISRG Root X1' "$CAB" 2>/dev/null); [ -z "$isrg" ] && isrg=0
 P "cert count:" "$n  $( [ "$n" -ge 50 ] && echo PASS || echo 'FAIL -- stale/stock bundle, modern certs will not validate')"
-P "has ISRG Root X1:" "$isrg $( [ "$isrg" -ge 1 ] && echo PASS || echo 'WARN -- no Let'\''s Encrypt root')"
+P "has ISRG Root X1:" "$isrg  $( [ "$isrg" -ge 1 ] && echo PASS || echo 'WARN -- ISRG not found by name; PEM bundles often omit names, not fatal if verify=0 below')"
 
 echo "===== clock / ntp ====="
 P "ntpdate-sync job:" "$(initctl status ntpdate-sync 2>/dev/null | grep -o 'start/running.*' || echo 'FAIL not running')"
@@ -68,11 +78,25 @@ echo "===== crashes ====="
 P "BrowserServer SIGSEGV:" "$(dmesg 2>/dev/null | grep -c 'BrowserServer.*received 11') (>0 = crashing -> check newest /var/log/reports/librdx)"
 
 echo "===== end-to-end TLS through the stack ====="
-LD_LIBRARY_PATH=/usr/lib/ssl11 curl -s --compressed --max-time 20 --cacert /etc/ssl/certs/ca-certificates.crt \
-  -o /dev/null -w 'curl: http=%{http_code} verify=%{ssl_verify_result} (want 200 / 0)\n' https://tweakers.net/ 2>&1 | tail -1
+CURLOUT=$(LD_LIBRARY_PATH=/usr/lib/ssl11 curl -s --compressed --max-time 20 --cacert "$CAB" \
+  -o /dev/null -w 'http=%{http_code} verify=%{ssl_verify_result}' https://tweakers.net/ 2>&1 | tail -1)
+echo "curl: $CURLOUT (want http=200 / verify=0)"
+CURL_OK=0; echo "$CURLOUT" | grep -q 'http=200' && CURL_OK=1
 
-echo "===== summary ====="
-echo "FAIL on BrowserServer=STOCK/unknown -> RPATH swap skipped (check BrowserServer md5 vs your build)"
-echo "FAIL on ssl11 maps -> browser on 0.9.8 (swap didn't take, or stray job won the race)"
-echo "FAIL on CA bundle  -> install the Mozilla ca-certificates ipk"
-echo "WARN on libWebKitLuna different -> send me that file; offsets may need a per-build OpenSSL"
+echo "===== VERDICT ====="
+# The only things that decide whether modern TLS is actually live in the browser:
+#   BrowserServer is the RPATH'd build, it has the ssl11 (1.1) libs mapped, and
+#   an HTTPS fetch through the stack returns 200.
+if [ "$BS_OK" = 1 ] && [ "$MAPS" -ge 4 ] && [ "$CURL_OK" = 1 ]; then
+  echo "PASS -- modern TLS is LIVE (BrowserServer RPATH'd, browser on 1.1 stack, HTTPS 200)."
+else
+  echo "PROBLEM -- modern TLS is NOT fully live; failing item(s):"
+  [ "$BS_OK" = 1 ]    || echo "  - BrowserServer not RPATH'd  -> the swap didn't apply"
+  [ "$MAPS" -ge 4 ]   || echo "  - browser not mapping /usr/lib/ssl11 -> restart the browser, or swap didn't take"
+  [ "$CURL_OK" = 1 ]  || echo "  - HTTPS through the stack failed -> check wifi (up?), clock/date, and CA bundle above"
+fi
+echo
+echo "legend (these explain a FAIL above; they are NOT results):"
+echo "  pkg NOT-INSTALLED but ssl11/BrowserServer PASS -> harmless; App-Manager install, working fine"
+echo "  ntpdate-sync FAIL not running -> only matters if you installed the ntpdate-sync ipk"
+echo "  libWebKitLuna WARN different  -> pull that file; offsets may need a per-build OpenSSL"
