@@ -1,3 +1,0 @@
-#!/bin/sh
-stop ntpdate-sync 2>/dev/null || true
-exit 0
