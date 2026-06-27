@@ -1,18 +1,23 @@
 #!/bin/sh
 mount -o remount,rw / 2>/dev/null || true
+STOCK_BS_MD5="0786bdf698220aa82a90838e30355c9f"
 
-# 1. inject ssl11 env into the browser upstart job(s)
-for job in /etc/event.d/browserserver /etc/event.d/browserservermojo; do
-    [ -f "$job" ] || continue
-    [ -f "$job.tls13-orig" ] || cp -p "$job" "$job.tls13-orig"
-    if ! grep -q 'ssl11' "$job"; then
-        awk '/LD_PRELOAD=.*libptmalloc3/ && !i {
-               print "    export LD_PRELOAD=\"/usr/lib/libptmalloc3.so /usr/lib/ssl11/libssl_compat.so\""
-               print "    # ssl11 browser TLS1.3"
-               print "    export LD_LIBRARY_PATH=\"/usr/lib/ssl11:${LD_LIBRARY_PATH}\""
-               i=1; next } { print }' "$job.tls13-orig" > "$job.tmp" && mv "$job.tmp" "$job"
-    fi
-done
+# 1. swap in the RPATH'd BrowserServer (loads /usr/lib/ssl11 with no env, so it
+#    works regardless of which launcher starts it -- the env/wrapper approach
+#    lost the upstart-vs-ls-hubd race on boot). Back up the stock binary once.
+cur=$(md5sum /usr/bin/BrowserServer 2>/dev/null | cut -d' ' -f1)
+if [ "$cur" = "$STOCK_BS_MD5" ]; then
+    cp -p /usr/bin/BrowserServer /usr/bin/BrowserServer.tls13-orig
+    cp -f /usr/lib/ssl11/BrowserServer.rpath /usr/bin/BrowserServer
+    chmod 755 /usr/bin/BrowserServer
+elif [ -f /usr/bin/BrowserServer.tls13-orig ]; then
+    # reinstall/upgrade: original already backed up, (re)apply the rpath binary
+    cp -f /usr/lib/ssl11/BrowserServer.rpath /usr/bin/BrowserServer
+    chmod 755 /usr/bin/BrowserServer
+else
+    echo "WARNING: /usr/bin/BrowserServer ($cur) is not the expected stock 3.0.5 binary;"
+    echo "         skipping the RPATH swap - modern TLS will NOT load in the browser."
+fi
 
 # 2. warn if no modern CA bundle
 n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null || echo 0)
@@ -20,7 +25,6 @@ n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null |
 
 # 3. restart browser
 stop browserserver 2>/dev/null || true
-stop browserservermojo 2>/dev/null || true
+n=0; while [ $n -lt 8 ]; do ps=$(pidof BrowserServer 2>/dev/null); [ -z "$ps" ] && break; for p in $ps; do kill -9 $p 2>/dev/null; done; n=$((n+1)); sleep 1; done
 start browserserver 2>/dev/null || true
-start browserservermojo 2>/dev/null || true
 exit 0

@@ -7,14 +7,16 @@ set -euo pipefail
 BASE="/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update"
 OUT="$BASE/ipks"
 VER="1.0.0"
-TLSVER="1.0.1"   # browser-tls13: UA override removed in this rev
+TLSVER="1.0.2"   # browser-tls13: RPATH'd BrowserServer (env-independent, survives reboot)
 ARCH="armv7"
+STOCK_BS_MD5="0786bdf698220aa82a90838e30355c9f"
 MAINT="Herrie <herrie82@gmail.com>"
 
 LIBSSL="$BASE/openssl-1.1.1w/libssl.so.1.1"
 LIBCRYPTO="$BASE/openssl-1.1.1w/libcrypto.so.1.1"
 LIBCOMPAT="$BASE/libssl_compat.so"
 LIBCURL="$BASE/curl-7.88.1/lib/.libs/libcurl.so.4.8.0"
+BROWSERSERVER="$BASE/BrowserServer.bin"   # stock 3.0.5 BrowserServer (md5 $STOCK_BS_MD5)
 NTPJOB="/tmp/ntpdate-sync"
 
 rm -rf "$OUT"; mkdir -p "$OUT"
@@ -43,6 +45,14 @@ ln -s libcurl.so.4.8.0 "$L/libcurl.so.4"
 ln -s libssl.so.1.1    "$L/libssl.so.0.9.8"
 ln -s libcrypto.so.1.1 "$L/libcrypto.so.0.9.8"
 
+# RPATH'd BrowserServer: bakes /usr/lib/ssl11 into DT_RPATH and adds the compat
+# shim as NEEDED, so the browser loads the 1.1 stack regardless of which launcher
+# starts it (upstart OR ls-hubd demand) and with no env vars. postinst swaps it in.
+cp "$BROWSERSERVER" "$L/BrowserServer.rpath"
+chmod 0755 "$L/BrowserServer.rpath"
+patchelf --force-rpath --set-rpath /usr/lib/ssl11 "$L/BrowserServer.rpath"
+patchelf --add-needed libssl_compat.so "$L/BrowserServer.rpath"
+
 ISIZE1=$(du -sk "$B1/data" | cut -f1)000
 cat > "$B1/control/control" <<EOF
 Package: org.webosinternals.browser-tls13
@@ -69,22 +79,29 @@ mount -o remount,rw / 2>/dev/null || true
 exit 0
 EOF
 
-cat > "$B1/control/postinst" <<'EOF'
+cat > "$B1/control/postinst" <<EOF
 #!/bin/sh
 mount -o remount,rw / 2>/dev/null || true
+STOCK_BS_MD5="$STOCK_BS_MD5"
+EOF
+cat >> "$B1/control/postinst" <<'EOF'
 
-# 1. inject ssl11 env into the browser upstart job(s)
-for job in /etc/event.d/browserserver /etc/event.d/browserservermojo; do
-    [ -f "$job" ] || continue
-    [ -f "$job.tls13-orig" ] || cp -p "$job" "$job.tls13-orig"
-    if ! grep -q 'ssl11' "$job"; then
-        awk '/LD_PRELOAD=.*libptmalloc3/ && !i {
-               print "    export LD_PRELOAD=\"/usr/lib/libptmalloc3.so /usr/lib/ssl11/libssl_compat.so\""
-               print "    # ssl11 browser TLS1.3"
-               print "    export LD_LIBRARY_PATH=\"/usr/lib/ssl11:${LD_LIBRARY_PATH}\""
-               i=1; next } { print }' "$job.tls13-orig" > "$job.tmp" && mv "$job.tmp" "$job"
-    fi
-done
+# 1. swap in the RPATH'd BrowserServer (loads /usr/lib/ssl11 with no env, so it
+#    works regardless of which launcher starts it -- the env/wrapper approach
+#    lost the upstart-vs-ls-hubd race on boot). Back up the stock binary once.
+cur=$(md5sum /usr/bin/BrowserServer 2>/dev/null | cut -d' ' -f1)
+if [ "$cur" = "$STOCK_BS_MD5" ]; then
+    cp -p /usr/bin/BrowserServer /usr/bin/BrowserServer.tls13-orig
+    cp -f /usr/lib/ssl11/BrowserServer.rpath /usr/bin/BrowserServer
+    chmod 755 /usr/bin/BrowserServer
+elif [ -f /usr/bin/BrowserServer.tls13-orig ]; then
+    # reinstall/upgrade: original already backed up, (re)apply the rpath binary
+    cp -f /usr/lib/ssl11/BrowserServer.rpath /usr/bin/BrowserServer
+    chmod 755 /usr/bin/BrowserServer
+else
+    echo "WARNING: /usr/bin/BrowserServer ($cur) is not the expected stock 3.0.5 binary;"
+    echo "         skipping the RPATH swap - modern TLS will NOT load in the browser."
+fi
 
 # 2. warn if no modern CA bundle
 n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null || echo 0)
@@ -92,9 +109,8 @@ n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null |
 
 # 3. restart browser
 stop browserserver 2>/dev/null || true
-stop browserservermojo 2>/dev/null || true
+n=0; while [ $n -lt 8 ]; do ps=$(pidof BrowserServer 2>/dev/null); [ -z "$ps" ] && break; for p in $ps; do kill -9 $p 2>/dev/null; done; n=$((n+1)); sleep 1; done
 start browserserver 2>/dev/null || true
-start browserservermojo 2>/dev/null || true
 exit 0
 EOF
 
@@ -108,12 +124,12 @@ EOF
 cat > "$B1/control/postrm" <<'EOF'
 #!/bin/sh
 mount -o remount,rw / 2>/dev/null || true
-for job in /etc/event.d/browserserver /etc/event.d/browserservermojo; do
-    [ -f "$job.tls13-orig" ] && mv -f "$job.tls13-orig" "$job"
-done
+stop browserserver 2>/dev/null || true
+n=0; while [ $n -lt 8 ]; do ps=$(pidof BrowserServer 2>/dev/null); [ -z "$ps" ] && break; for p in $ps; do kill -9 $p 2>/dev/null; done; n=$((n+1)); sleep 1; done
+# restore the stock BrowserServer
+[ -f /usr/bin/BrowserServer.tls13-orig ] && mv -f /usr/bin/BrowserServer.tls13-orig /usr/bin/BrowserServer
 rm -rf /usr/lib/ssl11
 start browserserver 2>/dev/null || true
-start browserservermojo 2>/dev/null || true
 exit 0
 EOF
 pack_ipk "$B1" "org.webosinternals.browser-tls13_${TLSVER}_${ARCH}.ipk"

@@ -1,11 +1,11 @@
 Package: org.webosinternals.browser-tls13
-Version: 1.0.1
+Version: 1.0.2
 Architecture: armv7
 Maintainer: Herrie <herrie82@gmail.com>
 Section: misc
 Priority: optional
 Depends:
-InstalledSize: 3836000
+InstalledSize: 4100000
 Description: Modern TLS 1.2/1.3 for the stock webOS TouchPad browser.
  Installs a process-private OpenSSL 1.1.1w + curl (with zlib) under
  /usr/lib/ssl11 and wires it into BrowserServer via LD_LIBRARY_PATH. The two
