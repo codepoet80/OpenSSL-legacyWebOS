@@ -1,0 +1,5 @@
+#!/bin/sh
+mount -o remount,rw / 2>/dev/null || true
+stop ntpdate-sync 2>/dev/null || true
+rm -f /etc/event.d/ntpdate-sync
+exit 0

@@ -1,0 +1,13 @@
+#!/bin/sh
+PID="org.webosinternals.ntpdate-sync"
+[ -z "$IPKG_OFFLINE_ROOT" ] && IPKG_OFFLINE_ROOT=/media/cryptofs/apps
+mount -o remount,rw / 2>/dev/null || true
+SRC=""
+for R in "$IPKG_OFFLINE_ROOT" /media/cryptofs/apps /var ""; do
+    [ -f "$R/usr/palm/applications/$PID/files/ntpdate-sync" ] && { SRC="$R/usr/palm/applications/$PID/files"; break; }
+done
+[ -n "$SRC" ] || { echo "ERROR: ntpdate-sync payload not found"; exit 1; }
+cp -f "$SRC/ntpdate-sync" /etc/event.d/ntpdate-sync
+chmod 755 /etc/event.d/ntpdate-sync
+start ntpdate-sync 2>/dev/null || true
+exit 0

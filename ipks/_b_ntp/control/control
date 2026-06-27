@@ -1,0 +1,9 @@
+Package: org.webosinternals.ntpdate-sync
+Version: 2.0.0
+Architecture: armv7
+Maintainer: WebOS Internals <support@webos-internals.org>
+Description: NTP clock sync for webOS TouchPad
+Section: System
+Priority: optional
+Depends:
+Source: { "Type":"Application", "Feed":"WebOS Internals", "Category":"System", "Title":"NTP Clock Sync", "FullDescription":"webOS time sync targets dead palm.com servers; this installs an upstart job that syncs from public NTP (retry-until-success + IP fallbacks) at boot and every 6h, fixing TLS cert validity windows.", "License":"MIT" }

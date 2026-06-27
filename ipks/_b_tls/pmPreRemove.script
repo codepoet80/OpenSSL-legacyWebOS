@@ -1,0 +1,8 @@
+#!/bin/sh
+mount -o remount,rw / 2>/dev/null || true
+stop browserserver 2>/dev/null || true
+i=0; while [ $i -lt 8 ]; do ps=$(pidof BrowserServer 2>/dev/null); [ -z "$ps" ] && break; for p in $ps; do kill -9 $p 2>/dev/null; done; i=$((i+1)); sleep 1; done
+[ -f /usr/bin/BrowserServer.tls13-orig ] && mv -f /usr/bin/BrowserServer.tls13-orig /usr/bin/BrowserServer
+rm -rf /usr/lib/ssl11
+start browserserver 2>/dev/null || true
+exit 0

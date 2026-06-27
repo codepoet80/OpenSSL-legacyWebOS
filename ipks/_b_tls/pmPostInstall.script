@@ -1,0 +1,46 @@
+#!/bin/sh
+STOCK_BS_MD5="0786bdf698220aa82a90838e30355c9f"
+PID="org.webosinternals.browser-tls13"
+# App-Manager installs offline under /media/cryptofs/apps and leaves the root ro;
+# raw `ipkg install` puts files at / . Find wherever our payload actually landed.
+[ -z "$IPKG_OFFLINE_ROOT" ] && IPKG_OFFLINE_ROOT=/media/cryptofs/apps
+mount -o remount,rw / 2>/dev/null || true
+SRC=""
+for R in "$IPKG_OFFLINE_ROOT" /media/cryptofs/apps /var ""; do
+    d="$R/usr/palm/applications/$PID/files"
+    [ -d "$d/ssl11" ] && { SRC="$d"; break; }
+done
+[ -n "$SRC" ] || { echo "ERROR: browser-tls13 payload not found - install failed"; exit 1; }
+
+# 0. clean stray upstart job-backups from old (<=1.0.3) installs (duplicate launchers)
+rm -f /etc/event.d/*.tls13-orig /etc/event.d/*.orig /etc/event.d/*.preua /etc/event.d/*.pre-rpath 2>/dev/null
+
+# 1. install the ssl11 stack to /usr/lib/ssl11
+rm -rf /usr/lib/ssl11; mkdir -p /usr/lib/ssl11
+cp -f "$SRC/ssl11/libssl.so.1.1" "$SRC/ssl11/libcrypto.so.1.1" \
+      "$SRC/ssl11/libssl_compat.so" "$SRC/ssl11/libcurl.so.4.8.0" /usr/lib/ssl11/
+chmod 755 /usr/lib/ssl11/*.so*
+ln -sf libcurl.so.4.8.0 /usr/lib/ssl11/libcurl.so.4
+ln -sf libssl.so.1.1    /usr/lib/ssl11/libssl.so.0.9.8
+ln -sf libcrypto.so.1.1 /usr/lib/ssl11/libcrypto.so.0.9.8
+
+# 2. swap in the RPATH'd BrowserServer (env-independent; survives reboot)
+cur=$(md5sum /usr/bin/BrowserServer 2>/dev/null | cut -d' ' -f1)
+if [ "$cur" = "$STOCK_BS_MD5" ]; then
+    cp -p /usr/bin/BrowserServer /usr/bin/BrowserServer.tls13-orig
+    cp -f "$SRC/BrowserServer.rpath" /usr/bin/BrowserServer; chmod 755 /usr/bin/BrowserServer
+elif [ -f /usr/bin/BrowserServer.tls13-orig ]; then
+    cp -f "$SRC/BrowserServer.rpath" /usr/bin/BrowserServer; chmod 755 /usr/bin/BrowserServer
+else
+    echo "WARNING: /usr/bin/BrowserServer ($cur) is not stock 3.0.5 -- RPATH swap skipped; modern TLS will NOT load."
+fi
+
+# 3. CA bundle check
+n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null || echo 0)
+[ "$n" -lt 50 ] && echo "WARNING: stale CA bundle ($n certs) -- install a current Mozilla ca-certificates ipk."
+
+# 4. restart browser
+stop browserserver 2>/dev/null || true
+i=0; while [ $i -lt 8 ]; do ps=$(pidof BrowserServer 2>/dev/null); [ -z "$ps" ] && break; for p in $ps; do kill -9 $p 2>/dev/null; done; i=$((i+1)); sleep 1; done
+start browserserver 2>/dev/null || true
+exit 0

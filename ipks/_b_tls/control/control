@@ -1,0 +1,9 @@
+Package: org.webosinternals.browser-tls13
+Version: 1.1.0
+Architecture: armv7
+Maintainer: WebOS Internals <support@webos-internals.org>
+Description: Modern TLS 1.2/1.3 for the stock webOS TouchPad browser
+Section: System
+Priority: optional
+Depends:
+Source: { "Type":"Application", "Feed":"WebOS Internals", "Category":"System", "Title":"Browser TLS 1.3", "FullDescription":"Adds a process-private OpenSSL 1.1.1w + curl(zlib) under /usr/lib/ssl11 and points the stock BrowserServer at it via RPATH, so the 2011 browser can reach modern TLS 1.2/1.3 sites. Requires a current /etc/ssl/certs/ca-certificates.crt (Mozilla ca-certificates).", "License":"OpenSSL/curl" }

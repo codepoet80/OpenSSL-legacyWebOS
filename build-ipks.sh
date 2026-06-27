@@ -1,188 +1,201 @@
 #!/bin/bash
-# Build two installable webOS ipks:
-#   1. org.webosinternals.browser-tls13  -- modern TLS for the stock browser
-#   2. org.webosinternals.ntpdate-sync   -- clock sync (replaces dead palm.com NTP)
+# Build two webOS ipks in the webos-internals App-Manager convention so they
+# install via Preware / App Catalog / WebOS Quick Install (which extract under
+# /media/cryptofs/apps and run postinst from there) -- NOT just raw `ipkg install`.
+#
+#   org.webosinternals.browser-tls13  -- modern TLS for the stock browser
+#   org.webosinternals.ntpdate-sync   -- clock sync (dead palm.com NTP replacement)
+#
+# Structure (matches org.webosinternals.ipkgservice / diffstat from the feed):
+#   ar order: debian-binary, data.tar.gz, control.tar.gz   (tars: -C dir . with ./ root)
+#   data ships under ./usr/palm/applications/<id>/ (appinfo.json + files/<payload>)
+#   control has a Source: JSON blob with "Type"; postinst copies files/ to the system.
 set -euo pipefail
 
 BASE="/home/herrie/webos/touchpad-kernel/doctor305/OpenSSL-11-Update"
-OUT="$BASE/ipks"
-VER="1.0.0"
-TLSVER="1.0.3"   # browser-tls13: RPATH'd BrowserServer + cleans stray event.d job-backups
-ARCH="armv7"
+OUT="$BASE/ipks"; ARCH="armv7"
+MAINT="WebOS Internals <support@webos-internals.org>"
+TLSVER="1.1.0"   # repackaged for App-Manager install
+NTPVER="2.0.0"   # repackaged for App-Manager install
 STOCK_BS_MD5="0786bdf698220aa82a90838e30355c9f"
-MAINT="Herrie <herrie82@gmail.com>"
 
 LIBSSL="$BASE/openssl-1.1.1w/libssl.so.1.1"
 LIBCRYPTO="$BASE/openssl-1.1.1w/libcrypto.so.1.1"
 LIBCOMPAT="$BASE/libssl_compat.so"
 LIBCURL="$BASE/curl-7.88.1/lib/.libs/libcurl.so.4.8.0"
-BROWSERSERVER="$BASE/BrowserServer.bin"   # stock 3.0.5 BrowserServer (md5 $STOCK_BS_MD5)
-NTPJOB="$BASE/ntpdate-sync"
-NTPVER="1.1.0"   # ntpdate-sync: retry-until-success + IP fallbacks (DNS-at-boot fix)
+BROWSERSERVER="$BASE/BrowserServer.bin"
+NTPSRC="$BASE/ntpdate-sync"
 
 rm -rf "$OUT"; mkdir -p "$OUT"
-TARFLAGS="--owner=0 --group=0 --numeric-owner -p"
+T="--owner=0 --group=0 --numeric-owner --format=ustar"
+# 1x1 transparent png (icon)
+PNG_B64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
 
-pack_ipk() { # $1=builddir  $2=ipkname
+pack() { # $1 builddir  $2 ipkname
   local b="$1" name="$2"
   printf '2.0\n' > "$b/debian-binary"
-  ( cd "$b/control" && chmod 0755 p* 2>/dev/null || true; tar $TARFLAGS -czf ../control.tar.gz ./* )
-  ( cd "$b/data"    && tar $TARFLAGS -czf ../data.tar.gz ./* )
-  ( cd "$b" && ar rc "$OUT/$name" debian-binary control.tar.gz data.tar.gz )
+  ( cd "$b/control" && tar $T -czf ../control.tar.gz . )
+  ( cd "$b/data"    && tar $T -czf ../data.tar.gz    . )
+  # webOS App-Manager hooks: the luna appinstaller (WOSQI / App Catalog / Preware
+  # app installs) runs these TOP-LEVEL scripts, not the Debian control postinst.
+  # Make them identical to postinst/prerm so every install path applies the bits.
+  cp "$b/control/postinst" "$b/pmPostInstall.script"
+  cp "$b/control/prerm"    "$b/pmPreRemove.script"
+  chmod 0755 "$b/pmPostInstall.script" "$b/pmPreRemove.script"
+  # webos-internals ar member order: debian-binary, data.tar.gz, control.tar.gz, pm scripts
+  ( cd "$b" && ar rc "$OUT/$name" debian-binary data.tar.gz control.tar.gz \
+        pmPostInstall.script pmPreRemove.script )
   echo "  built $name"
 }
 
-############################################################################
-# IPK 1: browser-tls13
-############################################################################
-B1="$OUT/_build_tls13"
-mkdir -p "$B1/control" "$B1/data/usr/lib/ssl11"
-L="$B1/data/usr/lib/ssl11"
-install -m0755 "$LIBSSL"    "$L/libssl.so.1.1"
-install -m0755 "$LIBCRYPTO" "$L/libcrypto.so.1.1"
-install -m0755 "$LIBCOMPAT" "$L/libssl_compat.so"
-install -m0755 "$LIBCURL"   "$L/libcurl.so.4.8.0"
-ln -s libcurl.so.4.8.0 "$L/libcurl.so.4"
-ln -s libssl.so.1.1    "$L/libssl.so.0.9.8"
-ln -s libcrypto.so.1.1 "$L/libcrypto.so.0.9.8"
+############################# browser-tls13 #############################
+ID=org.webosinternals.browser-tls13
+B="$OUT/_b_tls"; APPDIR="$B/data/usr/palm/applications/$ID"; F="$APPDIR/files"
+mkdir -p "$B/control" "$F/ssl11"
+install -m0644 "$LIBSSL"    "$F/ssl11/libssl.so.1.1"
+install -m0644 "$LIBCRYPTO" "$F/ssl11/libcrypto.so.1.1"
+install -m0644 "$LIBCOMPAT" "$F/ssl11/libssl_compat.so"
+install -m0644 "$LIBCURL"   "$F/ssl11/libcurl.so.4.8.0"
+# ship the RPATH'd BrowserServer
+cp "$BROWSERSERVER" "$F/BrowserServer.rpath"; chmod 0644 "$F/BrowserServer.rpath"
+patchelf --force-rpath --set-rpath /usr/lib/ssl11 "$F/BrowserServer.rpath"
+patchelf --add-needed libssl_compat.so "$F/BrowserServer.rpath"
+# app metadata (headless / hidden)
+cat > "$APPDIR/appinfo.json" <<EOF
+{ "title":"Browser TLS 1.3", "id":"$ID", "version":"$TLSVER", "vendor":"WebOS Internals",
+  "type":"web", "main":"index.html", "icon":"icon.png", "removable":true,
+  "noWindow":true, "visible":false }
+EOF
+echo '<html><head><title>Browser TLS 1.3</title></head><body></body></html>' > "$APPDIR/index.html"
+echo "$PNG_B64" | base64 -d > "$APPDIR/icon.png"
 
-# RPATH'd BrowserServer: bakes /usr/lib/ssl11 into DT_RPATH and adds the compat
-# shim as NEEDED, so the browser loads the 1.1 stack regardless of which launcher
-# starts it (upstart OR ls-hubd demand) and with no env vars. postinst swaps it in.
-cp "$BROWSERSERVER" "$L/BrowserServer.rpath"
-chmod 0755 "$L/BrowserServer.rpath"
-patchelf --force-rpath --set-rpath /usr/lib/ssl11 "$L/BrowserServer.rpath"
-patchelf --add-needed libssl_compat.so "$L/BrowserServer.rpath"
-
-ISIZE1=$(du -sk "$B1/data" | cut -f1)000
-cat > "$B1/control/control" <<EOF
-Package: org.webosinternals.browser-tls13
+cat > "$B/control/control" <<EOF
+Package: $ID
 Version: $TLSVER
 Architecture: $ARCH
 Maintainer: $MAINT
-Section: misc
+Description: Modern TLS 1.2/1.3 for the stock webOS TouchPad browser
+Section: System
 Priority: optional
 Depends:
-InstalledSize: $ISIZE1
-Description: Modern TLS 1.2/1.3 for the stock webOS TouchPad browser.
- Installs a process-private OpenSSL 1.1.1w + curl (with zlib) under
- /usr/lib/ssl11 and wires it into BrowserServer via LD_LIBRARY_PATH. The two
- custom OpenSSL libs relocate ssl->ctx (0xD8) and X509_STORE_CTX->cert (0x8) to
- the offsets libWebKitLuna hardcodes, so the browser's cert callback works.
- No system binary is modified and the User-Agent is left at the webOS default.
- NOTE: requires a current CA bundle in /etc/ssl/certs/ca-certificates.crt
- (install your Mozilla ca-certificates ipk).
+Source: { "Type":"Application", "Feed":"WebOS Internals", "Category":"System", "Title":"Browser TLS 1.3", "FullDescription":"Adds a process-private OpenSSL 1.1.1w + curl(zlib) under /usr/lib/ssl11 and points the stock BrowserServer at it via RPATH, so the 2011 browser can reach modern TLS 1.2/1.3 sites. Requires a current /etc/ssl/certs/ca-certificates.crt (Mozilla ca-certificates).", "License":"OpenSSL/curl" }
 EOF
 
-cat > "$B1/control/preinst" <<'EOF'
+cat > "$B/control/postinst" <<EOF
 #!/bin/sh
-mount -o remount,rw / 2>/dev/null || true
-exit 0
-EOF
-
-cat > "$B1/control/postinst" <<EOF
-#!/bin/sh
-mount -o remount,rw / 2>/dev/null || true
 STOCK_BS_MD5="$STOCK_BS_MD5"
+PID="$ID"
 EOF
-cat >> "$B1/control/postinst" <<'EOF'
+cat >> "$B/control/postinst" <<'EOF'
+# App-Manager installs offline under /media/cryptofs/apps and leaves the root ro;
+# raw `ipkg install` puts files at / . Find wherever our payload actually landed.
+[ -z "$IPKG_OFFLINE_ROOT" ] && IPKG_OFFLINE_ROOT=/media/cryptofs/apps
+mount -o remount,rw / 2>/dev/null || true
+SRC=""
+for R in "$IPKG_OFFLINE_ROOT" /media/cryptofs/apps /var ""; do
+    d="$R/usr/palm/applications/$PID/files"
+    [ -d "$d/ssl11" ] && { SRC="$d"; break; }
+done
+[ -n "$SRC" ] || { echo "ERROR: browser-tls13 payload not found - install failed"; exit 1; }
 
-# 0. remove stray upstart job-backups left by old (<=1.0.1) env-injection
-#    installs. Upstart runs EVERY file in /etc/event.d as a job, so a leftover
-#    browserserver.tls13-orig is a DUPLICATE launcher that fights the real one
-#    for the bus name -> endless respawn churn -> pages stop loading.
+# 0. clean stray upstart job-backups from old (<=1.0.3) installs (duplicate launchers)
 rm -f /etc/event.d/*.tls13-orig /etc/event.d/*.orig /etc/event.d/*.preua /etc/event.d/*.pre-rpath 2>/dev/null
 
-# 1. swap in the RPATH'd BrowserServer (loads /usr/lib/ssl11 with no env, so it
-#    works regardless of which launcher starts it -- the env/wrapper approach
-#    lost the upstart-vs-ls-hubd race on boot). Back up the stock binary once.
+# 1. install the ssl11 stack to /usr/lib/ssl11
+rm -rf /usr/lib/ssl11; mkdir -p /usr/lib/ssl11
+cp -f "$SRC/ssl11/libssl.so.1.1" "$SRC/ssl11/libcrypto.so.1.1" \
+      "$SRC/ssl11/libssl_compat.so" "$SRC/ssl11/libcurl.so.4.8.0" /usr/lib/ssl11/
+chmod 755 /usr/lib/ssl11/*.so*
+ln -sf libcurl.so.4.8.0 /usr/lib/ssl11/libcurl.so.4
+ln -sf libssl.so.1.1    /usr/lib/ssl11/libssl.so.0.9.8
+ln -sf libcrypto.so.1.1 /usr/lib/ssl11/libcrypto.so.0.9.8
+
+# 2. swap in the RPATH'd BrowserServer (env-independent; survives reboot)
 cur=$(md5sum /usr/bin/BrowserServer 2>/dev/null | cut -d' ' -f1)
 if [ "$cur" = "$STOCK_BS_MD5" ]; then
     cp -p /usr/bin/BrowserServer /usr/bin/BrowserServer.tls13-orig
-    cp -f /usr/lib/ssl11/BrowserServer.rpath /usr/bin/BrowserServer
-    chmod 755 /usr/bin/BrowserServer
+    cp -f "$SRC/BrowserServer.rpath" /usr/bin/BrowserServer; chmod 755 /usr/bin/BrowserServer
 elif [ -f /usr/bin/BrowserServer.tls13-orig ]; then
-    # reinstall/upgrade: original already backed up, (re)apply the rpath binary
-    cp -f /usr/lib/ssl11/BrowserServer.rpath /usr/bin/BrowserServer
-    chmod 755 /usr/bin/BrowserServer
+    cp -f "$SRC/BrowserServer.rpath" /usr/bin/BrowserServer; chmod 755 /usr/bin/BrowserServer
 else
-    echo "WARNING: /usr/bin/BrowserServer ($cur) is not the expected stock 3.0.5 binary;"
-    echo "         skipping the RPATH swap - modern TLS will NOT load in the browser."
+    echo "WARNING: /usr/bin/BrowserServer ($cur) is not stock 3.0.5 -- RPATH swap skipped; modern TLS will NOT load."
 fi
 
-# 2. warn if no modern CA bundle
+# 3. CA bundle check
 n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null || echo 0)
-[ "$n" -lt 50 ] && echo "WARNING: /etc/ssl/certs/ca-certificates.crt has only $n certs - install a current Mozilla CA bundle or cert validation will fail."
+[ "$n" -lt 50 ] && echo "WARNING: stale CA bundle ($n certs) -- install a current Mozilla ca-certificates ipk."
 
-# 3. restart browser
+# 4. restart browser
 stop browserserver 2>/dev/null || true
-n=0; while [ $n -lt 8 ]; do ps=$(pidof BrowserServer 2>/dev/null); [ -z "$ps" ] && break; for p in $ps; do kill -9 $p 2>/dev/null; done; n=$((n+1)); sleep 1; done
+i=0; while [ $i -lt 8 ]; do ps=$(pidof BrowserServer 2>/dev/null); [ -z "$ps" ] && break; for p in $ps; do kill -9 $p 2>/dev/null; done; i=$((i+1)); sleep 1; done
 start browserserver 2>/dev/null || true
 exit 0
 EOF
 
-cat > "$B1/control/prerm" <<'EOF'
-#!/bin/sh
-stop browserserver 2>/dev/null || true
-stop browserservermojo 2>/dev/null || true
-exit 0
-EOF
-
-cat > "$B1/control/postrm" <<'EOF'
+cat > "$B/control/prerm" <<'EOF'
 #!/bin/sh
 mount -o remount,rw / 2>/dev/null || true
 stop browserserver 2>/dev/null || true
-n=0; while [ $n -lt 8 ]; do ps=$(pidof BrowserServer 2>/dev/null); [ -z "$ps" ] && break; for p in $ps; do kill -9 $p 2>/dev/null; done; n=$((n+1)); sleep 1; done
-# restore the stock BrowserServer
+i=0; while [ $i -lt 8 ]; do ps=$(pidof BrowserServer 2>/dev/null); [ -z "$ps" ] && break; for p in $ps; do kill -9 $p 2>/dev/null; done; i=$((i+1)); sleep 1; done
 [ -f /usr/bin/BrowserServer.tls13-orig ] && mv -f /usr/bin/BrowserServer.tls13-orig /usr/bin/BrowserServer
 rm -rf /usr/lib/ssl11
 start browserserver 2>/dev/null || true
 exit 0
 EOF
-pack_ipk "$B1" "org.webosinternals.browser-tls13_${TLSVER}_${ARCH}.ipk"
+chmod 0755 "$B/control/postinst" "$B/control/prerm"
+pack "$B" "${ID}_${TLSVER}_${ARCH}.ipk"
 
-############################################################################
-# IPK 2: ntpdate-sync
-############################################################################
-B2="$OUT/_build_ntp"
-mkdir -p "$B2/control" "$B2/data/etc/event.d"
-install -m0755 "$NTPJOB" "$B2/data/etc/event.d/ntpdate-sync"
+############################# ntpdate-sync #############################
+ID2=org.webosinternals.ntpdate-sync
+B2="$OUT/_b_ntp"; APPDIR2="$B2/data/usr/palm/applications/$ID2"; F2="$APPDIR2/files"
+mkdir -p "$B2/control" "$F2"
+install -m0644 "$NTPSRC" "$F2/ntpdate-sync"
+cat > "$APPDIR2/appinfo.json" <<EOF
+{ "title":"NTP Clock Sync", "id":"$ID2", "version":"$NTPVER", "vendor":"WebOS Internals",
+  "type":"web", "main":"index.html", "icon":"icon.png", "removable":true,
+  "noWindow":true, "visible":false }
+EOF
+echo '<html><head><title>NTP Clock Sync</title></head><body></body></html>' > "$APPDIR2/index.html"
+echo "$PNG_B64" | base64 -d > "$APPDIR2/icon.png"
 
-ISIZE2=$(du -sk "$B2/data" | cut -f1)000
 cat > "$B2/control/control" <<EOF
-Package: org.webosinternals.ntpdate-sync
+Package: $ID2
 Version: $NTPVER
 Architecture: $ARCH
 Maintainer: $MAINT
-Section: misc
+Description: NTP clock sync for webOS TouchPad
+Section: System
 Priority: optional
 Depends:
-InstalledSize: $ISIZE2
-Description: NTP clock sync for webOS TouchPad.
- webOS's built-in time sync targets dead palm.com servers, so the clock
- free-runs and drifts -- which breaks TLS certificate validity windows. This
- installs an upstart job that syncs from public NTP (pool.ntp.org) at boot
- (retrying while Wi-Fi comes up) and every 6 hours, via the device's ntpdate.
+Source: { "Type":"Application", "Feed":"WebOS Internals", "Category":"System", "Title":"NTP Clock Sync", "FullDescription":"webOS time sync targets dead palm.com servers; this installs an upstart job that syncs from public NTP (retry-until-success + IP fallbacks) at boot and every 6h, fixing TLS cert validity windows.", "License":"MIT" }
 EOF
 
-cat > "$B2/control/preinst" <<'EOF'
+cat > "$B2/control/postinst" <<EOF
 #!/bin/sh
+PID="$ID2"
+EOF
+cat >> "$B2/control/postinst" <<'EOF'
+[ -z "$IPKG_OFFLINE_ROOT" ] && IPKG_OFFLINE_ROOT=/media/cryptofs/apps
 mount -o remount,rw / 2>/dev/null || true
-exit 0
-EOF
-
-cat > "$B2/control/postinst" <<'EOF'
-#!/bin/sh
+SRC=""
+for R in "$IPKG_OFFLINE_ROOT" /media/cryptofs/apps /var ""; do
+    [ -f "$R/usr/palm/applications/$PID/files/ntpdate-sync" ] && { SRC="$R/usr/palm/applications/$PID/files"; break; }
+done
+[ -n "$SRC" ] || { echo "ERROR: ntpdate-sync payload not found"; exit 1; }
+cp -f "$SRC/ntpdate-sync" /etc/event.d/ntpdate-sync
+chmod 755 /etc/event.d/ntpdate-sync
 start ntpdate-sync 2>/dev/null || true
 exit 0
 EOF
 
 cat > "$B2/control/prerm" <<'EOF'
 #!/bin/sh
+mount -o remount,rw / 2>/dev/null || true
 stop ntpdate-sync 2>/dev/null || true
+rm -f /etc/event.d/ntpdate-sync
 exit 0
 EOF
-pack_ipk "$B2" "org.webosinternals.ntpdate-sync_${NTPVER}_${ARCH}.ipk"
+chmod 0755 "$B2/control/postinst" "$B2/control/prerm"
+pack "$B2" "${ID2}_${NTPVER}_${ARCH}.ipk"
 
-echo "=== output ==="
-ls -l "$OUT"/*.ipk
+echo "=== output ==="; ls -l "$OUT"/*.ipk
