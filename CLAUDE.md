@@ -14,7 +14,7 @@ Modern TLS 1.2/1.3 (OpenSSL 1.1.1w + curl 7.88.1) for the 2011 HP TouchPad
 ## Mail TLS — `mail-tls13` (5th package; **EAS + IMAP + SMTP all working & hardware-proven**, v1.3.0)
 Goal: the stock Email app's native transports `mojomail-{eas,imap,pop,smtp}` reach modern
 TLS so accounts like Zoho (`msync.zoho.com`, EAS) and Fastmail (IMAP/SMTP) sync again. Full
-story in [`BUILDING-mail.md`](BUILDING-mail.md); deep notes in the `mail-eas-WORKING` and
+story in [`BUILDING.md`](BUILDING.md); deep notes in the `mail-eas-WORKING` and
 `mail-imap-smtp-WORKING` auto-memories.
 **Proven on hardware (v1.3.0):** EAS (Zoho: Mail/Contacts/Calendar/Tasks, TLS 1.3, no proxy)
 AND IMAP+SMTP (Fastmail, TLS 1.3) all validate + sync.
@@ -38,18 +38,23 @@ AND IMAP+SMTP (Fastmail, TLS 1.3) all validate + sync.
   mail libs import as functions; unresolved → `exit(127)` after `SSL_CTX_new`, before any
   ClientHello. So mail-tls13 is **self-contained for the shim and never requires re-issuing
   browser-tls13** (it still *depends* on browser-tls13 being installed for ssl11's OpenSSL).
-- **IMAP/SMTP fixes (v1.3.0), both NON-TLS — the TLS layer was already fine:** (a)
-  **`LD_BIND_NOW=1`** added to all four launchers — with lazy binding the transports
-  intermittently SIGSEGV in the glibc-2.8 dynamic linker (`do_lookup_x`/`check_match`) while
-  first-resolving a PLT symbol across the shim + 0.9.8→1.1 aliased OpenSSL (hit on SMTP);
-  eager binding fixes it. (b) **mojomail-imap 1-byte patch** `~A`→`AA` (0x7e→0x41 at file
-  offset **991784**): mojomail hard-codes a `~`-leading IMAP tag (`ImapRequestManager: ss <<
-  "~A" << id`), which strict servers (Fastmail) reject with an UNTAGGED `* BAD` that mojomail
-  can't match → 30s hang (err 3099). The postinst md5-guards the stock binary
-  (`9f6489…`→`78956f…`), patches a same-fs temp copy + `mv` (in-place `dd` fails ETXTBSY on
-  the running binary), backs up to `/var/luna`; prerm restores. libpalmsocket's CA store
-  (`/var/ssl/certs` + `set_default_verify_paths` honoring the launcher's `SSL_CERT_FILE`)
-  verifies modern certs fine.
+- **IMAP/SMTP fixes, both NON-TLS — the TLS layer was already fine** (libpalmsocket's CA store
+  = `/var/ssl/certs` + `set_default_verify_paths` honoring the launcher's `SSL_CERT_FILE`
+  verifies modern certs fine):
+  - **(a) `LD_BIND_NOW=1`** on all four launchers (in `mail-tls13` v1.3.x) — with lazy binding
+    the transports intermittently SIGSEGV in the glibc-2.8 dynamic linker
+    (`do_lookup_x`/`check_match`) while first-resolving a PLT symbol across the shim + 0.9.8→1.1
+    aliased OpenSSL (hit on SMTP); eager binding fixes it. (A launch-env change, not a mojomail
+    binary change.)
+  - **(b) mojomail-imap 1-byte patch** `~A`→`AA` (0x7e→0x41 at file offset **991784**): mojomail
+    hard-codes a `~`-leading IMAP tag (`ImapRequestManager: ss << "~A" << id`), which strict
+    servers (Fastmail) reject with an UNTAGGED `* BAD` that mojomail can't match → 30s hang
+    (err 3099). **Shipped as a SEPARATE, optional package `org.webosinternals.mojomail-imap-tagfix`**
+    (split out of mail-tls13 so it's take-or-leave and won't collide with other mojomail
+    patches — it modifies a stock binary). Its postinst md5-guards the stock binary
+    (`9f6489…`→`78956f…`), patches a same-fs temp copy + `mv` (in-place `dd` fails ETXTBSY on
+    the running binary), backs up to `/var/luna/mojomail-imap.tagfix-orig`; prerm restores. The
+    one and only mojomail-binary change — see `mojomail-changes.md`.
 - **Build needs** `curl-mail/lib/.libs/libcurl.so.4.*` AND `libssl_compat.so` (build the shim
   from `openssl_compat_shim.c`); else mail is SKIPped/errors. Validate with `mail-tls13-diag.sh`.
 - **Build host:** needs the PalmPDK ARM cross-gcc (`/opt/PalmPDK/arm-gcc`, gcc-4.3.3, i386 →

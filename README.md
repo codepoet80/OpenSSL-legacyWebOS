@@ -98,7 +98,8 @@ Install**, **App Catalog**, or `ipkg install`. **Install in this order:**
 | 2 | `org.webosinternals.luna-tls13` | Patches the `LunaSysMgr` upstart launcher to load `/usr/lib/ssl11`, moving app WebKit onto modern TLS. **Requires #1; reboot after.** |
 | 3 | `org.webosinternals.curl-tls13` | Modern command-line curl as `/usr/bin/curl11` and `/usr/bin/curl`. Standalone. |
 | 4 | `org.webosinternals.ntpdate-sync` | Upstart job: public NTP at boot (retry-until-success) and every 6 h. Standalone. |
-| 5 | `org.webosinternals.mail-tls13` | **Optional.** Routes the stock Email app's native transports through OpenSSL 1.1.1w via a purpose-built libcurl + its own compat shim in `/usr/lib/ssl11mail`. **Exchange ActiveSync (EAS) working & hardware-proven**; IMAP/POP/SMTP in testing. **Requires #1 installed** (for `/usr/lib/ssl11`); no reboot needed. See [BUILDING-mail.md](BUILDING-mail.md). |
+| 5 | `org.webosinternals.mail-tls13` | **Optional.** Routes the stock Email app's native transports through OpenSSL 1.1.1w via a purpose-built libcurl + its own compat shim in `/usr/lib/ssl11mail`. **EAS, IMAP & SMTP all working & hardware-proven** (Zoho EAS; Fastmail IMAP/SMTP). **Requires #1 installed** (for `/usr/lib/ssl11`); no reboot needed. See [BUILDING.md](BUILDING.md). |
+| 6 | `org.webosinternals.mojomail-imap-tagfix` | **Optional, standalone.** A one-byte patch to `mojomail-imap` so **strict IMAP servers (e.g. Fastmail) accept its command tags** (stock mojomail uses a `~`-prefixed tag some servers reject, hanging IMAP validation). Only needed for such servers; pairs with #5. Independent — take it or leave it. Reversible (restored on removal). See [mojomail-changes.md](mojomail-changes.md). |
 
 After installing, **reboot once** (`browser-tls13` self-restarts the browser, but
 `luna-tls13`'s launcher change applies on reboot). `luna-tls13`'s postinst refuses

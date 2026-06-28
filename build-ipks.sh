@@ -28,7 +28,7 @@ OUT="$BASE/ipks"; ARCH="armv7"
 # Optional package selection: ./build-ipks.sh [browser|ntp|curl|luna|mail|all ...]
 # No args -> "all" (back-compat). 'want <pkg>' gates each section, so e.g. the mail
 # package can be (re)built on a box without a clean stock device / BrowserServer.bin
-# while iterating its libcurl (see BUILDING-mail.md). 'all' also gates the blanket
+# while iterating its libcurl (see BUILDING.md). 'all' also gates the blanket
 # ipk clean below so a selective rebuild won't wipe the other packages' ipks.
 WANT="${*:-all}"
 want() { case " $WANT " in *" all "*) return 0;; *" $1 "*) return 0;; *) return 1;; esac; }
@@ -37,7 +37,8 @@ TLSVER="1.1.1"   # browser-tls13: app-layout + robust backup / safe teardown
 NTPVER="2.0.1"   # ntpdate-sync: app-layout
 CURLVER="1.0.1"  # curl-tls13: modern curl as /usr/bin/curl11 AND /usr/bin/curl (stock backed up); CA bundle defaulted
 LUNAVER="1.0.0"  # luna-tls13: app WebKit (LunaSysMgr/WebAppMgr) -> ssl11; needs browser-tls13
-MAILVER="1.3.0"  # mail-tls13: mojomail (EAS/IMAP/POP/SMTP) -> purpose-built libcurl (vs OpenSSL 1.1, CA bundle baked in) + OWN superset shim + ssl11; needs browser-tls13 installed + curl-mail/ (see BUILDING-mail.md). 1.3.0: full EAS+IMAP+SMTP hardware-proven -- adds LD_BIND_NOW=1 (eager binding; fixes intermittent ld.so SIGSEGV) + mojomail-imap ~A->AA tag patch (strict servers e.g. Fastmail). 1.2.0: EAS (shim CONF_modules_free + SSL_CTX_get_ex_new_index; libcurl --with-ca-bundle)
+MAILVER="1.3.1"  # mail-tls13: mojomail (EAS/IMAP/POP/SMTP) -> purpose-built libcurl (vs OpenSSL 1.1, CA bundle baked in) + OWN superset shim + ssl11 + LD_BIND_NOW launchers; needs browser-tls13 installed + curl-mail/ (see BUILDING.md). 1.3.1: split the mojomail-imap tag patch out into its own org.webosinternals.mojomail-imap-tagfix package (take-or-leave). 1.3.0: full EAS+IMAP+SMTP proven (LD_BIND_NOW eager binding fixes intermittent ld.so SIGSEGV). 1.2.0: EAS (shim CONF_modules_free + SSL_CTX_get_ex_new_index; libcurl --with-ca-bundle)
+IMAPTAGVER="1.0.0"  # mojomail-imap-tagfix: standalone 1-byte patch of /usr/bin/mojomail-imap IMAP tag prefix ~A->AA so strict servers (Fastmail) accept it (see mojomail-changes.md). Independent of the TLS stack; take-or-leave.
 STOCK_BS_MD5="0786bdf698220aa82a90838e30355c9f"
 
 LIBSSL="$BASE/openssl-1.1.1w/libssl.so.1.1"
@@ -484,7 +485,7 @@ if want mail; then
 # app's EAS/IMAP/POP/SMTP sync actually runs) through the OpenSSL 1.1.1w stack, so
 # the 2011 mail client can reach modern TLS 1.2/1.3 servers (Zoho, Gmail, etc.).
 #
-# KEY DESIGN (the long story is in BUILDING-mail.md): mojomail does HTTPS via libcurl
+# KEY DESIGN (the long story is in BUILDING.md): mojomail does HTTPS via libcurl
 # (EAS) / libpalmsocket (line protocols). Two proven dead ends: (a) ssl11's libcurl
 # 7.88.1 SIGSEGVs in curl_multi_remove_handle (mojomail's glibcurl glue was built for
 # curl 7.21.7+c-ares, incompatible with the 11-years-newer multi/resolver internals);
@@ -494,13 +495,13 @@ if want mail; then
 # ares, compiled against OpenSSL 1.1 *headers* so no offset assumptions) into a redirect
 # dir /usr/lib/ssl11mail, and point the four launchers there. REQUIRES browser-tls13
 # (for /usr/lib/ssl11). No reboot. The libcurl must be cross-built first -- see
-# BUILDING-mail.md; if curl-mail/ is absent this package is SKIPPED (not shipped broken).
+# BUILDING.md; if curl-mail/ is absent this package is SKIPPED (not shipped broken).
 MAILCURL=""
 for f in "$BASE"/curl-mail/lib/.libs/libcurl.so.4.* "$BASE"/curl-mail/libcurl.so.4.*; do
   [ -f "$f" ] && { MAILCURL="$f"; break; }
 done
 if [ -z "$MAILCURL" ]; then
-  echo "  SKIP mail-tls13: no cross-built libcurl at curl-mail/lib/.libs/libcurl.so.4.* (see BUILDING-mail.md)"
+  echo "  SKIP mail-tls13: no cross-built libcurl at curl-mail/lib/.libs/libcurl.so.4.* (see BUILDING.md)"
 else
   MAILCURL_BN="$(basename "$MAILCURL")"
   ID5=org.webosinternals.mail-tls13
@@ -600,39 +601,10 @@ for s in eas imap pop smtp; do
 done
 echo "mail-tls13: patched $patched / 4 mojomail launcher(s)."
 
-# 2b. one-byte patch of mojomail-imap's IMAP tag prefix "~A" -> "AA". mojomail hard-codes
-# a '~'-leading tag (ImapRequestManager: ss << "~A" << id). Strict modern servers (e.g.
-# Fastmail) reject any '~' in the tag and answer with an UNTAGGED "* BAD invalid command",
-# which mojomail can never match to its pending "~A1" request -> IMAP validation hangs 30s
-# (error 3099). Patching 0x7e('~')->0x41('A') at file offset 991784 makes tags "AA1" etc,
-# which every server accepts. md5-guarded to the stock webOS 3.0.5 binary; backed up for prerm.
-IMAPBIN=/usr/bin/mojomail-imap
-STOCK_IMAP_MD5=9f6489ae48fc131733c1a88a9aa1056a
-PATCHED_IMAP_MD5=78956f6daf374a9a940e914459f234c3
-if [ -f "$IMAPBIN" ]; then
-    im=$(md5sum "$IMAPBIN" | cut -d' ' -f1)
-    if [ "$im" = "$STOCK_IMAP_MD5" ]; then
-        cp -f "$IMAPBIN" /var/luna/mojomail-imap.tls13-orig
-        # Patch a SAME-FILESYSTEM temp copy then atomically mv over the original. An
-        # in-place dd fails with ETXTBSY while mojomail-imap is running (dbus-activated);
-        # rename(2) replaces the dir entry safely even then (the live process keeps the
-        # old inode until it next respawns -- the killall below triggers that).
-        cp -f "$IMAPBIN" "$IMAPBIN.tls13new"
-        printf 'A' | dd of="$IMAPBIN.tls13new" bs=1 seek=991784 count=1 conv=notrunc 2>/dev/null
-        nm=$(md5sum "$IMAPBIN.tls13new" | cut -d' ' -f1)
-        if [ "$nm" = "$PATCHED_IMAP_MD5" ]; then
-            chmod 755 "$IMAPBIN.tls13new"; mv -f "$IMAPBIN.tls13new" "$IMAPBIN"
-            echo "mail-tls13: patched mojomail-imap IMAP tag (~A->AA) for strict servers."
-        else
-            rm -f "$IMAPBIN.tls13new"
-            echo "mail-tls13 WARNING: mojomail-imap patch md5 unexpected ($nm) -- left stock."
-        fi
-    elif [ "$im" = "$PATCHED_IMAP_MD5" ]; then
-        echo "mail-tls13: mojomail-imap already tag-patched."
-    else
-        echo "mail-tls13 NOTE: mojomail-imap md5 $im unrecognized -- skipping tag patch (IMAP on strict servers like Fastmail may hang)."
-    fi
-fi
+# NOTE: the one-byte mojomail-imap "~A"->"AA" IMAP-tag patch (needed only for strict servers
+# like Fastmail that reject '~'-leading tags) is a SEPARATE, optional package --
+# org.webosinternals.mojomail-imap-tagfix -- so it can be taken or left independently of this
+# TLS stack and won't collide with other mojomail patches. See mojomail-changes.md.
 
 # 3. CA bundle sanity (mail does REAL cert validation -- unlike a plain version bump)
 n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null); [ -z "$n" ] && n=0
@@ -660,11 +632,6 @@ for s in eas imap pop smtp; do
         rm -f "/tmp/mailu.$s.$$"
     fi
 done
-# restore the tag-patched mojomail-imap binary
-if [ -f /var/luna/mojomail-imap.tls13-orig ]; then
-    cp -f /var/luna/mojomail-imap.tls13-orig /usr/bin/mojomail-imap
-    rm -f /var/luna/mojomail-imap.tls13-orig
-fi
 rm -rf /usr/lib/ssl11mail
 /usr/bin/ls-control scan-services 2>/dev/null || true
 for b in mojomail-eas mojomail-imap mojomail-pop mojomail-smtp; do killall "$b" 2>/dev/null; done
@@ -675,5 +642,91 @@ EOF
   pack "$B5" "${ID5}_${MAILVER}_${ARCH}.ipk"
 fi
 fi  # want mail
+
+##################### mojomail-imap-tagfix (standalone) #####################
+# A take-or-leave, one-byte patch of /usr/bin/mojomail-imap: its hard-coded IMAP command
+# tag prefix "~A" -> "AA" (0x7e->0x41 at file offset 991784). mojomail tags commands "~A1",
+# "~A2", ...; strict modern servers (e.g. Fastmail) reject a '~' in the tag with an UNTAGGED
+# "* BAD invalid command", which mojomail can never match to its pending "~A1" request -> IMAP
+# validation hangs 30s (error 3099). "AA1".. is valid everywhere. This is the ONLY change the
+# suite makes to a stock mojomail binary, packaged separately from mail-tls13 so it can be
+# applied or skipped independently and won't collide with other mojomail patches. Full detail:
+# mojomail-changes.md. No payload, no deps -- the postinst patches in place (backup in
+# /var/luna); prerm restores. Ships nothing if you don't want to touch the binary: just leave
+# this package out.
+if want imaptagfix; then
+  ID6=org.webosinternals.mojomail-imap-tagfix
+  B6="$OUT/_b_imaptag"; APPDIR6="$B6/data/usr/palm/applications/$ID6"
+  rm -rf "$B6"; mkdir -p "$B6/control" "$APPDIR6"
+  cat > "$APPDIR6/appinfo.json" <<EOF
+{ "title":"Mojomail IMAP Tag Fix", "id":"$ID6", "version":"$IMAPTAGVER", "vendor":"WebOS Internals",
+  "type":"web", "main":"index.html", "icon":"icon.png", "removable":true,
+  "noWindow":true, "visible":false }
+EOF
+  echo '<html><head><title>Mojomail IMAP Tag Fix</title></head><body></body></html>' > "$APPDIR6/index.html"
+  echo "$PNG_B64" | base64 -d > "$APPDIR6/icon.png"
+
+  cat > "$B6/control/control" <<EOF
+Package: $ID6
+Version: $IMAPTAGVER
+Architecture: $ARCH
+Maintainer: $MAINT
+Description: Patch mojomail-imap's IMAP command tag (~A -> AA) for strict modern servers
+Section: System
+Priority: optional
+Source: { "Type":"Application", "Feed":"WebOS Internals", "Category":"System", "Title":"Mojomail IMAP Tag Fix", "FullDescription":"Optional, standalone one-byte patch of /usr/bin/mojomail-imap: changes its hard-coded IMAP command tag prefix from ~A to AA. mojomail tags IMAP commands ~A1, ~A2, ...; some strict modern servers (e.g. Fastmail) reject a tilde in the tag with an untagged BAD response, which the stock client can never match to its request, so IMAP account validation hangs and fails (error 3099). AA1.. is accepted by every server. Independent of the TLS packages -- take it or leave it. md5-guarded to the stock webOS 3.0.5 binary, backed up to /var/luna, restored on removal. Useful together with org.webosinternals.mail-tls13 (which provides modern TLS for the mail transports).", "License":"Public Domain" }
+EOF
+
+  cat > "$B6/control/postinst" <<EOF
+#!/bin/sh
+IMAPBIN=/usr/bin/mojomail-imap
+STOCK_IMAP_MD5=9f6489ae48fc131733c1a88a9aa1056a
+PATCHED_IMAP_MD5=78956f6daf374a9a940e914459f234c3
+EOF
+  cat >> "$B6/control/postinst" <<'EOF'
+[ -z "$IPKG_OFFLINE_ROOT" ] && IPKG_OFFLINE_ROOT=/media/cryptofs/apps
+mount -o remount,rw / 2>/dev/null || true
+mkdir -p /var/luna 2>/dev/null
+if [ ! -f "$IMAPBIN" ]; then echo "mojomail-imap-tagfix: $IMAPBIN not found -- nothing to patch."; exit 0; fi
+im=$(md5sum "$IMAPBIN" | cut -d' ' -f1)
+if [ "$im" = "$STOCK_IMAP_MD5" ]; then
+    cp -f "$IMAPBIN" /var/luna/mojomail-imap.tagfix-orig
+    # Patch a SAME-FILESYSTEM temp copy then atomically mv over the original. An in-place dd
+    # fails ETXTBSY while mojomail-imap is running (dbus-activated); rename(2) replaces the
+    # dir entry safely (the live process keeps the old inode until it respawns -- killall below).
+    cp -f "$IMAPBIN" "$IMAPBIN.tagfixnew"
+    printf 'A' | dd of="$IMAPBIN.tagfixnew" bs=1 seek=991784 count=1 conv=notrunc 2>/dev/null
+    nm=$(md5sum "$IMAPBIN.tagfixnew" | cut -d' ' -f1)
+    if [ "$nm" = "$PATCHED_IMAP_MD5" ]; then
+        chmod 755 "$IMAPBIN.tagfixnew"; mv -f "$IMAPBIN.tagfixnew" "$IMAPBIN"
+        echo "mojomail-imap-tagfix: patched IMAP tag (~A->AA)."
+    else
+        rm -f "$IMAPBIN.tagfixnew" /var/luna/mojomail-imap.tagfix-orig
+        echo "mojomail-imap-tagfix ERROR: patch produced unexpected md5 ($nm) -- left stock."
+    fi
+elif [ "$im" = "$PATCHED_IMAP_MD5" ]; then
+    echo "mojomail-imap-tagfix: already patched."
+else
+    echo "mojomail-imap-tagfix NOTE: mojomail-imap md5 $im unrecognized -- NOT patching (a different build, or another mojomail patch is present). Left untouched."
+fi
+/usr/bin/ls-control scan-services 2>/dev/null || true
+killall mojomail-imap 2>/dev/null
+exit 0
+EOF
+
+  cat > "$B6/control/prerm" <<'EOF'
+#!/bin/sh
+mount -o remount,rw / 2>/dev/null || true
+if [ -f /var/luna/mojomail-imap.tagfix-orig ]; then
+    cp -f /var/luna/mojomail-imap.tagfix-orig /usr/bin/mojomail-imap
+    rm -f /var/luna/mojomail-imap.tagfix-orig
+    echo "mojomail-imap-tagfix: restored stock mojomail-imap."
+fi
+killall mojomail-imap 2>/dev/null
+exit 0
+EOF
+  chmod 0755 "$B6/control/postinst" "$B6/control/prerm"
+  pack "$B6" "${ID6}_${IMAPTAGVER}_${ARCH}.ipk"
+fi  # want imaptagfix
 
 echo "=== output ==="; ls -l "$OUT"/*.ipk

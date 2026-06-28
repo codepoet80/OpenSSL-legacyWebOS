@@ -24,7 +24,7 @@ else
 fi
 
 say "=== 2. libcurl redirect dir $MAILDIR ==="
-# Current design (see BUILDING-mail.md): ssl11mail ships a purpose-built libcurl
+# Current design (see BUILDING.md): ssl11mail ships a purpose-built libcurl
 # (~7.51-7.61, compiled vs OpenSSL 1.1 headers) PLUS the ssl11 OpenSSL sonames it
 # NEEDs and the 0.9.8 aliases the other mojomail consumers reference.
 if [ -d "$MAILDIR" ]; then
