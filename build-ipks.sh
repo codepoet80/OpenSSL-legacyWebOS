@@ -29,6 +29,7 @@ TLSVER="1.1.1"   # browser-tls13: app-layout + robust backup / safe teardown
 NTPVER="2.0.1"   # ntpdate-sync: app-layout
 CURLVER="1.0.1"  # curl-tls13: modern curl as /usr/bin/curl11 AND /usr/bin/curl (stock backed up); CA bundle defaulted
 LUNAVER="1.0.0"  # luna-tls13: app WebKit (LunaSysMgr/WebAppMgr) -> ssl11; needs browser-tls13
+MAILVER="1.1.0"  # mail-tls13: mojomail (EAS/IMAP/POP/SMTP) -> purpose-built libcurl (vs OpenSSL 1.1) + ssl11; needs browser-tls13 + curl-mail/ (see BUILDING-mail.md)
 STOCK_BS_MD5="0786bdf698220aa82a90838e30355c9f"
 
 LIBSSL="$BASE/openssl-1.1.1w/libssl.so.1.1"
@@ -452,5 +453,149 @@ exit 0
 EOF
 chmod 0755 "$B4/control/postinst" "$B4/control/prerm"
 pack "$B4" "${ID4}_${LUNAVER}_${ARCH}.ipk"
+
+############################# mail-tls13 #############################
+# Routes the native mail transports (mojomail-eas/imap/pop/smtp -- where the Email
+# app's EAS/IMAP/POP/SMTP sync actually runs) through the OpenSSL 1.1.1w stack, so
+# the 2011 mail client can reach modern TLS 1.2/1.3 servers (Zoho, Gmail, etc.).
+#
+# KEY DESIGN (the long story is in BUILDING-mail.md): mojomail does HTTPS via libcurl
+# (EAS) / libpalmsocket (line protocols). Two proven dead ends: (a) ssl11's libcurl
+# 7.88.1 SIGSEGVs in curl_multi_remove_handle (mojomail's glibcurl glue was built for
+# curl 7.21.7+c-ares, incompatible with the 11-years-newer multi/resolver internals);
+# (b) keeping STOCK libcurl 7.21.7 on ssl11 OpenSSL does the TLS1.3 handshake fine but
+# SIGSEGVs inspecting the X509 cert (ssl11 OpenSSL only carries libWebKitLuna's offset
+# relocation, not libcurl's). FIX: ship a purpose-built libcurl (~7.51-7.61, --enable-
+# ares, compiled against OpenSSL 1.1 *headers* so no offset assumptions) into a redirect
+# dir /usr/lib/ssl11mail, and point the four launchers there. REQUIRES browser-tls13
+# (for /usr/lib/ssl11). No reboot. The libcurl must be cross-built first -- see
+# BUILDING-mail.md; if curl-mail/ is absent this package is SKIPPED (not shipped broken).
+MAILCURL=""
+for f in "$BASE"/curl-mail/lib/.libs/libcurl.so.4.* "$BASE"/curl-mail/libcurl.so.4.*; do
+  [ -f "$f" ] && { MAILCURL="$f"; break; }
+done
+if [ -z "$MAILCURL" ]; then
+  echo "  SKIP mail-tls13: no cross-built libcurl at curl-mail/lib/.libs/libcurl.so.4.* (see BUILDING-mail.md)"
+else
+  MAILCURL_BN="$(basename "$MAILCURL")"
+  ID5=org.webosinternals.mail-tls13
+  B5="$OUT/_b_mail"; APPDIR5="$B5/data/usr/palm/applications/$ID5"; F5="$APPDIR5/files"
+  rm -rf "$B5"; mkdir -p "$B5/control" "$F5/ssl11mail"
+  install -m0644 "$MAILCURL" "$F5/ssl11mail/$MAILCURL_BN"
+  cat > "$APPDIR5/appinfo.json" <<EOF
+{ "title":"Mail TLS 1.3", "id":"$ID5", "version":"$MAILVER", "vendor":"WebOS Internals",
+  "type":"web", "main":"index.html", "icon":"icon.png", "removable":true,
+  "noWindow":true, "visible":false }
+EOF
+  echo '<html><head><title>Mail TLS 1.3</title></head><body></body></html>' > "$APPDIR5/index.html"
+  echo "$PNG_B64" | base64 -d > "$APPDIR5/icon.png"
+
+  cat > "$B5/control/control" <<EOF
+Package: $ID5
+Version: $MAILVER
+Architecture: $ARCH
+Maintainer: $MAINT
+Description: Modern TLS 1.2/1.3 for the webOS mail client (EAS/IMAP/POP/SMTP)
+Section: System
+Priority: optional
+Depends: org.webosinternals.browser-tls13
+Source: { "Type":"Application", "Feed":"WebOS Internals", "Category":"System", "Title":"Mail TLS 1.3", "FullDescription":"Routes the native mail transports (mojomail-eas/imap/pop/smtp) through a purpose-built libcurl (compiled against OpenSSL 1.1.1w) under /usr/lib/ssl11mail, so the stock Email app can sync Exchange ActiveSync/IMAP/POP/SMTP accounts on modern TLS 1.2/1.3 servers (Zoho, Gmail, etc.). Patches the four D-Bus service launchers (backups in /var/luna). REQUIRES org.webosinternals.browser-tls13 (provides /usr/lib/ssl11) and a current /etc/ssl/certs/ca-certificates.crt. No reboot needed.", "License":"OpenSSL/curl" }
+EOF
+
+  # postinst: build the OpenSSL-1.1 redirect dir with OUR libcurl + patch the four
+  # launchers. Refuses if the ssl11 stack is absent (so it can't half-apply). Backups
+  # go OUTSIDE /etc/event.d. Never touches /usr/lib/ssl11 (browser/curl11 unaffected).
+  cat > "$B5/control/postinst" <<EOF
+#!/bin/sh
+MAILCURL_BN="$MAILCURL_BN"
+PID="$ID5"
+EOF
+  cat >> "$B5/control/postinst" <<'EOF'
+[ -z "$IPKG_OFFLINE_ROOT" ] && IPKG_OFFLINE_ROOT=/media/cryptofs/apps
+mount -o remount,rw / 2>/dev/null || true
+SSL11=/usr/lib/ssl11
+MAILDIR=/usr/lib/ssl11mail
+if [ ! -f "$SSL11/libssl_compat.so" ] || [ ! -f "$SSL11/libssl.so.1.1" ]; then
+    echo "mail-tls13 ERROR: /usr/lib/ssl11 stack not found -- install org.webosinternals.browser-tls13 first. Not patching."
+    exit 1
+fi
+SRC=""
+for R in "$IPKG_OFFLINE_ROOT" /media/cryptofs/apps /var ""; do
+    d="$R/usr/palm/applications/$PID/files"
+    [ -f "$d/ssl11mail/$MAILCURL_BN" ] && { SRC="$d"; break; }
+done
+[ -n "$SRC" ] || { echo "mail-tls13 ERROR: payload (libcurl) not found -- install failed"; exit 1; }
+
+# 1. redirect dir: OUR libcurl (built vs OpenSSL 1.1 headers) + ssl11 OpenSSL. The 1.1
+#    sonames satisfy our libcurl's NEEDED; the 0.9.8 aliases satisfy the OTHER mojomail
+#    consumers (libpalmsocket etc.) that still reference the 0.9.8 sonames. libcares.so.2
+#    resolves from /usr/lib (the device's). No 7.88 libcurl here.
+rm -rf "$MAILDIR"; mkdir -p "$MAILDIR"
+cp -f "$SRC/ssl11mail/$MAILCURL_BN" "$MAILDIR/$MAILCURL_BN"; chmod 755 "$MAILDIR/$MAILCURL_BN"
+ln -sf "$MAILCURL_BN"            "$MAILDIR/libcurl.so.4"
+ln -sf "$SSL11/libssl.so.1.1"    "$MAILDIR/libssl.so.1.1"
+ln -sf "$SSL11/libcrypto.so.1.1" "$MAILDIR/libcrypto.so.1.1"
+ln -sf "$SSL11/libssl.so.1.1"    "$MAILDIR/libssl.so.0.9.8"
+ln -sf "$SSL11/libcrypto.so.1.1" "$MAILDIR/libcrypto.so.0.9.8"
+ln -sf "$SSL11/libssl_compat.so" "$MAILDIR/libssl_compat.so"
+
+# 2. patch the four mojomail D-Bus launchers (idempotent; backup each once to /var/luna)
+mkdir -p /var/luna 2>/dev/null
+PFX='/usr/bin/env LD_LIBRARY_PATH=/usr/lib/ssl11mail LD_PRELOAD=/usr/lib/ssl11mail/libssl_compat.so CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt'
+patched=0
+for s in eas imap pop smtp; do
+    F="/usr/share/dbus-1/system-services/com.palm.$s.service"
+    [ -f "$F" ] || continue
+    grep -q 'ssl11mail' "$F" 2>/dev/null && { patched=$((patched+1)); continue; }
+    cp -p "$F" "/var/luna/com.palm.$s.service.tls13-orig"
+    awk -v p="$PFX" '
+      /^Exec=\/usr\/bin\/mojomail-/ && $0 !~ /ssl11mail/ { sub(/^Exec=/, "Exec=" p " "); print; next }
+      { print }
+    ' "$F" > "/tmp/mail.$s.$$" && cat "/tmp/mail.$s.$$" > "$F"
+    rm -f "/tmp/mail.$s.$$"
+    if grep -q 'ssl11mail' "$F" 2>/dev/null; then
+        patched=$((patched+1))
+    else
+        cp -f "/var/luna/com.palm.$s.service.tls13-orig" "$F"   # restore on failure
+        echo "mail-tls13 WARNING: could not patch $F (left stock)."
+    fi
+done
+echo "mail-tls13: patched $patched / 4 mojomail launcher(s)."
+
+# 3. CA bundle sanity (mail does REAL cert validation -- unlike a plain version bump)
+n=$(grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt 2>/dev/null); [ -z "$n" ] && n=0
+[ "$n" -lt 50 ] && echo "mail-tls13 WARNING: stale CA bundle ($n certs) -- mail cert checks may fail; install a current ca-certificates."
+
+# 4. reload the service registry + stop running transports so they respawn patched
+/usr/bin/ls-control scan-services 2>/dev/null || true
+for b in mojomail-eas mojomail-imap mojomail-pop mojomail-smtp; do killall "$b" 2>/dev/null; done
+echo "mail-tls13: done. Open Email and refresh an account (or wait for scheduled sync) to test."
+exit 0
+EOF
+
+  cat > "$B5/control/prerm" <<'EOF'
+#!/bin/sh
+mount -o remount,rw / 2>/dev/null || true
+for s in eas imap pop smtp; do
+    F="/usr/share/dbus-1/system-services/com.palm.$s.service"
+    B="/var/luna/com.palm.$s.service.tls13-orig"
+    [ -f "$F" ] || continue
+    if [ -f "$B" ]; then
+        cp -f "$B" "$F"; rm -f "$B"
+    else
+        # no backup -- strip our 5-token env prefix in place (env + 4 VAR= tokens)
+        awk '/^Exec=\/usr\/bin\/env .*mojomail-/ { sub(/^Exec=\/usr\/bin\/env [^ ]* [^ ]* [^ ]* [^ ]* /, "Exec="); print; next } { print }' "$F" > "/tmp/mailu.$s.$$" && cat "/tmp/mailu.$s.$$" > "$F"
+        rm -f "/tmp/mailu.$s.$$"
+    fi
+done
+rm -rf /usr/lib/ssl11mail
+/usr/bin/ls-control scan-services 2>/dev/null || true
+for b in mojomail-eas mojomail-imap mojomail-pop mojomail-smtp; do killall "$b" 2>/dev/null; done
+echo "mail-tls13: reverted mojomail launchers to stock."
+exit 0
+EOF
+  chmod 0755 "$B5/control/postinst" "$B5/control/prerm"
+  pack "$B5" "${ID5}_${MAILVER}_${ARCH}.ipk"
+fi
 
 echo "=== output ==="; ls -l "$OUT"/*.ipk

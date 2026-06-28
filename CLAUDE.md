@@ -11,6 +11,31 @@ Modern TLS 1.2/1.3 (OpenSSL 1.1.1w + curl 7.88.1) for the 2011 HP TouchPad
 3. `curl-tls13` — modern `/usr/bin/curl11` + `/usr/bin/curl` (stock backed up).
 4. `ntpdate-sync` — NTP clock sync.
 
+## Mail TLS — `mail-tls13` (5th package, IN PROGRESS — not shipping yet)
+Goal: the stock Email app's native transports `mojomail-{eas,imap,pop,smtp}` reach modern
+TLS so accounts like Zoho (`msync.zoho.com`, EAS, needs TLS 1.2) sync again. Full story in
+[`BUILDING-mail.md`](BUILDING-mail.md); deep notes in the `mail-tls-eas` auto-memory.
+- **Architecture:** `com.palm.app.email` is just UI → delegates to `palm://com.palm.eas/`
+  etc. TLS happens in the native transports: **EAS via libcurl** (`libemail-common`'s
+  `glibcurl`, multi interface), **IMAP/POP/SMTP via `libpalmsocket`** (direct OpenSSL,
+  `SSLv23_method`). Launchers are the four D-Bus `*.service` files in
+  `/usr/share/dbus-1/system-services/`; reload edits with **`ls-control scan-services`**
+  (no UI bounce). Backups go in `/var/luna` (never `/etc/event.d`).
+- **Two dead ends proven on hardware** (don't repeat): (a) pointing mojomail at ssl11's
+  libcurl 7.88.1 → SIGSEGV in `curl_multi_remove_handle` (mojomail's glibcurl was built
+  for curl 7.21.7+c-ares); (b) keeping STOCK libcurl 7.21.7 on ssl11 OpenSSL → TLS 1.3
+  handshake succeeds then SIGSEGV inspecting the X509 cert (ssl11 OpenSSL only carries
+  libWebKitLuna's partial offset relocation, not libcurl's).
+- **The fix:** ship a purpose-built **libcurl ~7.51–7.61, `--enable-ares`, compiled against
+  OpenSSL 1.1 headers** (so no offset assumptions) into `/usr/lib/ssl11mail` and point the
+  four launchers there. `build-ipks.sh` already builds this package **if** the cross-built
+  lib is at `curl-mail/lib/.libs/libcurl.so.4.*` (else it SKIPs). Validate with
+  `mail-tls13-diag.sh` on a TEST tablet; iterate curl version if needed. IMAP/POP/SMTP
+  (libpalmsocket) is a separate validation — may also need wider OpenSSL offset relocation.
+- **Build host:** needs the PalmPDK ARM cross-gcc. The Mac copy at `/opt/PalmPDK` is
+  **i386 → cannot run on Apple Silicon** (`bad CPU type`); build on a **Linux** box. The
+  device binaries for offline RE are in `analysis/device/` (gitignored).
+
 ## Commands
 - Build: `./build-ipks.sh` → `ipks/` (needs `patchelf`, **GNU ar**, and `BrowserServer.bin` — auto-fetched over novacom from a connected stock device).
 - Diagnose on device: push `tls13-diag.sh`, `sh tls13-diag.sh` → look at the `VERDICT` line.

@@ -3,3 +3,4 @@ ipks/_build_*
 ipks/_b_*
 BrowserServer.bin
 ipks-backup/
+analysis/
