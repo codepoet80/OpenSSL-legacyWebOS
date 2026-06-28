@@ -24,12 +24,17 @@ the rest of the 2011 OS untouched.
   any HTML rendered in a card, via the app WebKit host (`LunaSysMgr`/`WebAppMgr`).
 - ✅ **A modern command-line `curl`** (7.88.1) — installed as both `curl11` and
   `curl` (the stock 0.9.8 binary is backed up and restored on removal).
+- ✅ **Modern TLS for the stock Email app** (optional `mail-tls13` package) — the
+  native mail transports reach TLS 1.2/1.3 servers. **Exchange ActiveSync (EAS) is
+  working and hardware-proven** (e.g. Zoho — Mail/Contacts/Calendar/Tasks sync
+  directly, no proxy); IMAP/POP/SMTP are in testing.
 - ✅ **Validates current certificates** against an up-to-date Mozilla CA bundle.
 - ✅ **gzip/deflate** decoding (curl built with zlib) — required for most sites.
 - ✅ **Process-private & reboot-proof.** The modern stack lives in `/usr/lib/ssl11`
   and is loaded only by the browser, the app WebKit host, and the curl wrapper.
-  Wi‑Fi/VPN/EAP, e‑mail, `keymanager`, the download manager, Node services, etc.
-  keep using the original 0.9.8 and are **unaffected**.
+  Wi‑Fi/VPN/EAP, `keymanager`, the download manager, Node services, etc.
+  keep using the original 0.9.8 and are **unaffected**. (E‑mail can be moved to
+  modern TLS separately with the optional `mail-tls13` package — see Packages.)
 - ✅ **Auto clock sync** (separate package): webOS's own time sync targets dead
   `palm.com` servers, so the clock drifts and breaks cert validity windows.
 - ✅ **Cleanly removable** — every change is reversible via package removal.
@@ -93,6 +98,7 @@ Install**, **App Catalog**, or `ipkg install`. **Install in this order:**
 | 2 | `org.webosinternals.luna-tls13` | Patches the `LunaSysMgr` upstart launcher to load `/usr/lib/ssl11`, moving app WebKit onto modern TLS. **Requires #1; reboot after.** |
 | 3 | `org.webosinternals.curl-tls13` | Modern command-line curl as `/usr/bin/curl11` and `/usr/bin/curl`. Standalone. |
 | 4 | `org.webosinternals.ntpdate-sync` | Upstart job: public NTP at boot (retry-until-success) and every 6 h. Standalone. |
+| 5 | `org.webosinternals.mail-tls13` | **Optional.** Routes the stock Email app's native transports through OpenSSL 1.1.1w via a purpose-built libcurl + its own compat shim in `/usr/lib/ssl11mail`. **Exchange ActiveSync (EAS) working & hardware-proven**; IMAP/POP/SMTP in testing. **Requires #1 installed** (for `/usr/lib/ssl11`); no reboot needed. See [BUILDING-mail.md](BUILDING-mail.md). |
 
 After installing, **reboot once** (`browser-tls13` self-restarts the browser, but
 `luna-tls13`'s launcher change applies on reboot). `luna-tls13`'s postinst refuses

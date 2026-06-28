@@ -9,5 +9,11 @@ Install via **Preware** / **WebOS Quick Install** / `ipkg install`, in this orde
 
 Then **reboot once**.
 
+Optional 5th package — modern TLS for the stock Email app:
+
+5. `org.webosinternals.mail-tls13` — mail transports on TLS 1.2/1.3 (**requires #1**; no
+   reboot). **Exchange ActiveSync (EAS) working & hardware-proven**; IMAP/POP/SMTP in
+   testing. Details: [BUILDING-mail.md](../BUILDING-mail.md).
+
 Full details — requirements, what it does/doesn't do, verification, recovery, and how
 it works — are in the [project README](../README.md). Building: [BUILDING.md](../BUILDING.md).
