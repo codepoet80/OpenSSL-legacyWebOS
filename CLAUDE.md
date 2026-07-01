@@ -7,7 +7,7 @@ Modern TLS 1.2/1.3 (OpenSSL 1.1.1w + curl 7.88.1) for the 2011 HP TouchPad
 
 ## The four packages (install order)
 1. `browser-tls13` — RPATH'd `/usr/bin/BrowserServer` → stock browser on TLS 1.3. **Ships `/usr/lib/ssl11`; install first.**
-2. `luna-tls13` — patches the `LunaSysMgr` upstart launcher → app WebKit (Mojo/Enyo XHR) on TLS 1.3. **Needs #1; reboot after.**
+2. `luna-tls13` — patches the `LunaSysMgr` upstart launcher → app WebKit (Mojo/Enyo XHR) on TLS 1.3, **+ `LD_BIND_NOW=1` (v1.1.0) so HTML5 streaming media plays** (see Key facts). **Needs #1; reboot after.**
 3. `curl-tls13` — modern `/usr/bin/curl11` + `/usr/bin/curl` (stock backed up).
 4. `ntpdate-sync` — NTP clock sync.
 
@@ -83,6 +83,7 @@ AND IMAP+SMTP (Fastmail, TLS 1.3) all validate + sync.
 - `libWebKitLuna` hardcodes `ssl->ctx`@`0xD8`, `X509_STORE_CTX->cert`@`0x8`; the bundled OpenSSL relocates those + `libssl_compat.so` bridges the rest.
 - Recovery from a wedged UI: `mount -o remount,rw / ; cp /var/luna/LunaSysMgr.tls13-orig /etc/event.d/LunaSysMgr ; reboot` (over novacom).
 - webos-mcp server has webOS platform knowledge (resources under `webos://knowledge/...`) — consult `tls-and-networking`, `system-internals`, `gotchas`.
+- **HTML5 streaming media (Pandora/Plex/drPodder) needs `LD_BIND_NOW=1` on the LunaSysMgr launcher** (added by `luna-tls13` ≥ v1.1.0; same lazy-binding class as the mail transports above). Without it, the `media-pipeline` worker that `WebAppMgr` **fork+execs** — inheriting the ssl11 env — SIGSEGVs in the glibc-2.8 dynamic linker while first (lazy) binding a PLT symbol across the 0.9.8→1.1 shim, **dying before `gst_init`, silently (no PmLog line, no crash report), on the network startup path only** (local `file://` media was unaffected → "Music plays, Pandora spins forever"). Proven NOT to be: gstreamer/TLS (`souphttpsrc`→`libsoup`→**gnutls** works fine under the stack; Pandora audio is plain http anyway), libcurl (worker links none), symbol collision (libcrypto.so.1.1 ∩ libgcrypt/libgnutls = 0), OpenSSL fork-safety (the worker is fork+EXEC, not fork-only), or nizovn. **No wrapper/env-scrub fix is possible** — the worker's LS2 role is keyed to the exe path `/usr/bin/media-pipeline` (re-exec of any other name → `-1027 Invalid permissions`), so the launcher **env** is the only lever. To debug the *real* worker (wrappers break its LS2 role): add `GST_DEBUG`+`GST_DEBUG_FILE=/media/internal/…` to the launcher env (not a wrapper), reboot, read the trace — empty for the network worker = dies before `gst_init`.
 
 ## Git
 - `origin` = the fork (codepoet80), `upstream` = Herrie82. Team works on `main` (no feature branches). PR: `gh pr create --repo Herrie82/OpenSSL-legacyWebOS --base main --head codepoet80:main`.
