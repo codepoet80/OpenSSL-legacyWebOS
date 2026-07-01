@@ -36,7 +36,7 @@ MAINT="WebOS Internals <support@webos-internals.org>"
 TLSVER="1.1.2"   # browser-tls13: 1.1.2 ssl11 OpenSSL rebuilt with ARM NEON bulk crypto (bsaes AES / sha-neon / poly1305-neon / ChaCha20) on top of the existing ecp_nistz256+bn_mul_mont handshake asm -- see build-openssl.sh; still 1.1.1w, ABI 0x5000002 unchanged. 1.1.1: app-layout + robust backup / safe teardown
 NTPVER="2.0.1"   # ntpdate-sync: app-layout
 CURLVER="1.0.1"  # curl-tls13: modern curl as /usr/bin/curl11 AND /usr/bin/curl (stock backed up); CA bundle defaulted
-LUNAVER="1.0.0"  # luna-tls13: app WebKit (LunaSysMgr/WebAppMgr) -> ssl11; needs browser-tls13
+LUNAVER="1.1.0"  # luna-tls13: app WebKit (LunaSysMgr/WebAppMgr) -> ssl11; needs browser-tls13. 1.1.0: + LD_BIND_NOW=1 on the LunaSysMgr launcher -> fixes HTML5 media playback (Pandora/Plex/drPodder). Forked media-pipeline workers were SIGSEGVing in glibc-2.8 lazy PLT binding across the 0.9.8->1.1 shim, dying before gst_init. Upgrade-safe: adds LD_BIND_NOW to an already-ssl11-patched 1.0.0 launcher without a full re-patch.
 MAILVER="1.3.1"  # mail-tls13: mojomail (EAS/IMAP/POP/SMTP) -> purpose-built libcurl (vs OpenSSL 1.1, CA bundle baked in) + OWN superset shim + ssl11 + LD_BIND_NOW launchers; needs browser-tls13 installed + curl-mail/ (see BUILDING.md). 1.3.1: split the mojomail-imap tag patch out into its own org.webosinternals.mojomail-imap-tagfix package (take-or-leave). 1.3.0: full EAS+IMAP+SMTP proven (LD_BIND_NOW eager binding fixes intermittent ld.so SIGSEGV). 1.2.0: EAS (shim CONF_modules_free + SSL_CTX_get_ex_new_index; libcurl --with-ca-bundle)
 IMAPTAGVER="1.0.0"  # mojomail-imap-tagfix: standalone 1-byte patch of /usr/bin/mojomail-imap IMAP tag prefix ~A->AA so strict servers (Fastmail) accept it (see mojomail-changes.md). Independent of the TLS stack; take-or-leave.
 STOCK_BS_MD5="0786bdf698220aa82a90838e30355c9f"
@@ -430,24 +430,36 @@ if [ ! -f "$COMPAT" ]; then
     echo "luna-tls13 ERROR: /usr/lib/ssl11 stack not found -- install org.webosinternals.browser-tls13 first. Not patching."
     exit 1
 fi
-if grep -q 'ssl11/libssl_compat.so' "$L" 2>/dev/null; then
-    echo "luna-tls13: LunaSysMgr launcher already patched."
+if grep -q 'ssl11/libssl_compat.so' "$L" 2>/dev/null && grep -q 'LD_BIND_NOW=1' "$L" 2>/dev/null; then
+    echo "luna-tls13: LunaSysMgr launcher already patched (ssl11 + LD_BIND_NOW)."
     exit 0
 fi
 mkdir -p /var/luna 2>/dev/null
 [ -f /var/luna/LunaSysMgr.tls13-orig ] || cp -p "$L" /var/luna/LunaSysMgr.tls13-orig
-awk '
+if grep -q 'ssl11/libssl_compat.so' "$L" 2>/dev/null; then
+    # older luna-tls13 already added the ssl11 exports; just add the media-worker fix.
+    # LD_BIND_NOW=1: eager PLT binding. Without it, forked media-pipeline workers
+    # (HTML5 <audio class=media>: Pandora/Plex/drPodder) SIGSEGV in the glibc-2.8
+    # dynamic linker while LAZY-binding a symbol across the 0.9.8->1.1 OpenSSL shim,
+    # dying before gst_init -> "finding next song" forever. (Same fix as mojomail.)
+    awk '/export LD_LIBRARY_PATH=\/usr\/lib\/ssl11/ && !bn { print; print "\texport LD_BIND_NOW=1"; bn=1; next } { print }' \
+        "$L" > /tmp/lsm.bn.$$ && cat /tmp/lsm.bn.$$ > "$L"
+    rm -f /tmp/lsm.bn.$$
+else
+    awk '
 /export LD_PRELOAD="/ {
     sub(/"[ \t]*$/, " /usr/lib/ssl11/libssl_compat.so\"")
     print
     print "\texport LD_LIBRARY_PATH=/usr/lib/ssl11"
+    print "\texport LD_BIND_NOW=1"
     next
 }
 { print }
 ' "$L" > /tmp/lsm.tls13.$$ && cat /tmp/lsm.tls13.$$ > "$L"
-rm -f /tmp/lsm.tls13.$$
-if grep -q 'ssl11/libssl_compat.so' "$L" && grep -q 'LD_LIBRARY_PATH=/usr/lib/ssl11' "$L"; then
-    echo "luna-tls13: patched LunaSysMgr launcher. REBOOT to route app WebKit through OpenSSL 1.1 / TLS 1.3."
+    rm -f /tmp/lsm.tls13.$$
+fi
+if grep -q 'ssl11/libssl_compat.so' "$L" && grep -q 'LD_LIBRARY_PATH=/usr/lib/ssl11' "$L" && grep -q 'LD_BIND_NOW=1' "$L"; then
+    echo "luna-tls13: patched LunaSysMgr launcher (ssl11 + LD_BIND_NOW). REBOOT to route app WebKit through OpenSSL 1.1 / TLS 1.3 and fix HTML5 media playback."
 else
     echo "luna-tls13 WARNING: LD_PRELOAD anchor not found; restoring stock launcher (no change)."
     cp -f /var/luna/LunaSysMgr.tls13-orig "$L"
@@ -468,6 +480,7 @@ else
     awk '
     /export LD_PRELOAD="/ { gsub(/ \/usr\/lib\/ssl11\/libssl_compat.so/, ""); print; next }
     /export LD_LIBRARY_PATH=\/usr\/lib\/ssl11/ { next }
+    /export LD_BIND_NOW=1/ { next }
     { print }
     ' "$L" > /tmp/lsm.unp.$$ && cat /tmp/lsm.unp.$$ > "$L"
     rm -f /tmp/lsm.unp.$$
