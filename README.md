@@ -95,7 +95,7 @@ Install**, **App Catalog**, or `ipkg install`. **Install in this order:**
 | # | Package | Installs |
 |---|---------|----------|
 | 1 | `org.webosinternals.browser-tls13` | OpenSSL 1.1.1w + curl(zlib) + compat shim in `/usr/lib/ssl11`, and an RPATH-patched `/usr/bin/BrowserServer`. **Install first** — provides `/usr/lib/ssl11` that #2 and #3 build on. |
-| 2 | `org.webosinternals.luna-tls13` | Patches the `LunaSysMgr` upstart launcher to load `/usr/lib/ssl11`, moving app WebKit onto modern TLS. **v1.1.0 also exports `LD_BIND_NOW=1` so HTML5 streaming-media apps (Pandora/Plex/drPodder) play again** (1.0.0 made their media worker crash on start). **Requires #1; reboot after.** |
+| 2 | `org.webosinternals.luna-tls13` | Patches the `LunaSysMgr` upstart launcher to load `/usr/lib/ssl11`, moving app WebKit onto modern TLS. **v1.1.1 also installs a `media-pipeline` env-scrub wrapper so streaming *and* local media (Pandora/Plex/drPodder and stock Music) play reliably** — the media worker inherited the ssl11 stack it never needed, which wedged playback after one track. Installs cleanly on top of 1.0.0/1.1.0. **Requires #1; reboot after.** |
 | 3 | `org.webosinternals.curl-tls13` | Modern command-line curl as `/usr/bin/curl11` and `/usr/bin/curl`. Standalone. |
 | 4 | `org.webosinternals.ntpdate-sync` | Upstart job: public NTP at boot (retry-until-success) and every 6 h. Standalone. |
 | 5 | `org.webosinternals.mail-tls13` | **Optional.** Routes the stock Email app's native transports through OpenSSL 1.1.1w via a purpose-built libcurl + its own compat shim in `/usr/lib/ssl11mail`. **EAS, IMAP & SMTP all working & hardware-proven** (Zoho EAS; Fastmail IMAP/SMTP). **Requires #1 installed** (for `/usr/lib/ssl11`); no reboot needed. See [BUILDING.md](BUILDING.md). |
@@ -180,7 +180,7 @@ and an end-to-end curl. Common results:
 | `curl: (60) ... local issuer` | Stale/missing CA bundle — install a current Mozilla `ca-certificates` ipk. |
 | `curl http=000` right after boot | Network/clock not ready; retry after ~90 s. |
 | Page blank / "you have been blocked" | Engine limit / Cloudflare block — **not** TLS (see *What it does NOT do*). |
-| Streaming-media apps (Pandora/Plex/drPodder) never play | Update `luna-tls13` to **≥ 1.1.0** and reboot — it adds `LD_BIND_NOW=1` (older 1.0.0 let the app's `media-pipeline` worker crash before it could start; local file playback was unaffected). |
+| Media (Pandora/Plex/drPodder **or** stock Music) plays ~1 song, then the play button does nothing until a reboot | Update `luna-tls13` to **≥ 1.1.1** and reboot — it installs a `media-pipeline` env-scrub wrapper that keeps the ssl11 stack (which the media worker never needed) out of the worker, so playback stops wedging. (1.1.0's `LD_BIND_NOW` only fixed an earlier crash-on-start; it left this deeper wedge.) |
 
 ## Compatibility
 

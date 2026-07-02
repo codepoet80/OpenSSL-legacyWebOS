@@ -36,7 +36,7 @@ MAINT="WebOS Internals <support@webos-internals.org>"
 TLSVER="1.1.2"   # browser-tls13: 1.1.2 ssl11 OpenSSL rebuilt with ARM NEON bulk crypto (bsaes AES / sha-neon / poly1305-neon / ChaCha20) on top of the existing ecp_nistz256+bn_mul_mont handshake asm -- see build-openssl.sh; still 1.1.1w, ABI 0x5000002 unchanged. 1.1.1: app-layout + robust backup / safe teardown
 NTPVER="2.0.1"   # ntpdate-sync: app-layout
 CURLVER="1.0.1"  # curl-tls13: modern curl as /usr/bin/curl11 AND /usr/bin/curl (stock backed up); CA bundle defaulted
-LUNAVER="1.1.0"  # luna-tls13: app WebKit (LunaSysMgr/WebAppMgr) -> ssl11; needs browser-tls13. 1.1.0: + LD_BIND_NOW=1 on the LunaSysMgr launcher -> fixes HTML5 media playback (Pandora/Plex/drPodder). Forked media-pipeline workers were SIGSEGVing in glibc-2.8 lazy PLT binding across the 0.9.8->1.1 shim, dying before gst_init. Upgrade-safe: adds LD_BIND_NOW to an already-ssl11-patched 1.0.0 launcher without a full re-patch.
+LUNAVER="1.1.1"  # luna-tls13: app WebKit (LunaSysMgr/WebAppMgr) -> ssl11; needs browser-tls13. 1.1.1: ship a media-pipeline env-scrub wrapper so HTML5 media (Pandora/Plex/drPodder AND stock Music) plays RELIABLY. The forked media worker inherits WebAppMgr's ssl11 env but never needed OpenSSL (local files; http via libsoup->gnutls), and that inherited stack corrupts its teardown -> media wedged after ~1 song (next worker dies at init, play goes no-op until a Luna restart). The wrapper (installed AS /usr/bin/media-pipeline) restores the stock env and execs the real binary, moved to .real and given its own LS2 role. SUPERSEDES 1.1.0's LD_BIND_NOW-only fix, which only unmasked this deeper wedge. Wrapper install is independent of the launcher patch, so it also fixes 1.1.0 installs on upgrade. 1.1.0: + LD_BIND_NOW=1 (first-worker lazy-binding crash across the 0.9.8->1.1 shim).
 MAILVER="1.3.1"  # mail-tls13: mojomail (EAS/IMAP/POP/SMTP) -> purpose-built libcurl (vs OpenSSL 1.1, CA bundle baked in) + OWN superset shim + ssl11 + LD_BIND_NOW launchers; needs browser-tls13 installed + curl-mail/ (see BUILDING.md). 1.3.1: split the mojomail-imap tag patch out into its own org.webosinternals.mojomail-imap-tagfix package (take-or-leave). 1.3.0: full EAS+IMAP+SMTP proven (LD_BIND_NOW eager binding fixes intermittent ld.so SIGSEGV). 1.2.0: EAS (shim CONF_modules_free + SSL_CTX_get_ex_new_index; libcurl --with-ca-bundle)
 IMAPTAGVER="1.0.0"  # mojomail-imap-tagfix: standalone 1-byte patch of /usr/bin/mojomail-imap IMAP tag prefix ~A->AA so strict servers (Fastmail) accept it (see mojomail-changes.md). Independent of the TLS stack; take-or-leave.
 STOCK_BS_MD5="0786bdf698220aa82a90838e30355c9f"
@@ -396,8 +396,26 @@ if want luna; then
 # /usr/lib/ssl11. No payload: the postinst edits the LunaSysMgr upstart launcher.
 # REQUIRES browser-tls13 (for /usr/lib/ssl11); REBOOT after install.
 ID4=org.webosinternals.luna-tls13
-B4="$OUT/_b_luna"; APPDIR4="$B4/data/usr/palm/applications/$ID4"
-mkdir -p "$B4/control" "$APPDIR4"
+B4="$OUT/_b_luna"; APPDIR4="$B4/data/usr/palm/applications/$ID4"; F4="$APPDIR4/files"
+mkdir -p "$B4/control" "$APPDIR4" "$F4"
+# media-pipeline env-scrub wrapper payload: compile from source with the PalmPDK
+# cross-gcc when present (reproducible); else fall back to the committed prebuilt so
+# luna still builds on a host without the toolchain (e.g. the Mac re-wrap path).
+MPWRAP_SRC="$BASE/media-pipeline-wrap.c"
+MPWRAP_BIN="$BASE/media-pipeline-wrap.bin"
+CROSSGCC=/opt/PalmPDK/arm-gcc/bin/arm-none-linux-gnueabi-gcc
+if [ -x "$CROSSGCC" ] && [ -f "$MPWRAP_SRC" ]; then
+    "$CROSSGCC" -static -Os -o "$F4/media-pipeline.wrap" "$MPWRAP_SRC"
+    "${CROSSGCC%gcc}strip" "$F4/media-pipeline.wrap" 2>/dev/null || true
+    echo "  luna: compiled media-pipeline wrapper from source"
+elif [ -f "$MPWRAP_BIN" ]; then
+    cp -f "$MPWRAP_BIN" "$F4/media-pipeline.wrap"
+    echo "  luna: using prebuilt media-pipeline wrapper"
+else
+    echo "ERROR: no media-pipeline wrapper -- need $MPWRAP_SRC + PalmPDK gcc, or prebuilt $MPWRAP_BIN" >&2
+    exit 1
+fi
+chmod 0644 "$F4/media-pipeline.wrap"
 cat > "$APPDIR4/appinfo.json" <<EOF
 { "title":"Luna TLS 1.3", "id":"$ID4", "version":"$LUNAVER", "vendor":"WebOS Internals",
   "type":"web", "main":"index.html", "icon":"icon.png", "removable":true,
@@ -415,14 +433,18 @@ Description: Modern TLS 1.2/1.3 for webOS apps (Mojo/Enyo WebKit)
 Section: System
 Priority: optional
 Depends:
-Source: { "Type":"Application", "Feed":"WebOS Internals", "Category":"System", "Title":"Luna TLS 1.3", "FullDescription":"Routes the app WebKit host (LunaSysMgr/WebAppMgr) through the OpenSSL 1.1.1w stack under /usr/lib/ssl11 so in-app HTTPS (Mojo/Enyo XHR, enyo.WebService) negotiates TLS 1.2/1.3. REQUIRES org.webosinternals.browser-tls13 (provides /usr/lib/ssl11). Edits the LunaSysMgr upstart launcher; REBOOT after install. Recovery: novacomd survives a UI failure -- restore /var/luna/LunaSysMgr.tls13-orig to /etc/event.d/LunaSysMgr and reboot.", "License":"OpenSSL/curl" }
+Source: { "Type":"Application", "Feed":"WebOS Internals", "Category":"System", "Title":"Luna TLS 1.3", "FullDescription":"Routes the app WebKit host (LunaSysMgr/WebAppMgr) through the OpenSSL 1.1.1w stack under /usr/lib/ssl11 so in-app HTTPS (Mojo/Enyo XHR, enyo.WebService) negotiates TLS 1.2/1.3. Also installs a tiny wrapper at /usr/bin/media-pipeline that keeps the ssl11 stack out of the HTML5 media worker (which never needed it), so streaming and local media (Pandora/Plex/drPodder and stock Music) play reliably instead of wedging after one track. REQUIRES org.webosinternals.browser-tls13 (provides /usr/lib/ssl11). Edits the LunaSysMgr upstart launcher; REBOOT after install. Recovery: novacomd survives a UI failure -- restore /var/luna/LunaSysMgr.tls13-orig to /etc/event.d/LunaSysMgr and reboot.", "License":"OpenSSL/curl" }
 EOF
 
 # postinst: patch the LunaSysMgr launcher to load ssl11 (+ compat shim). Backup goes
 # OUTSIDE /etc/event.d (upstart runs every file there as a job). Requires the ssl11
 # stack; never restarts LunaSysMgr (that would kill the UI/Preware) -- reboot applies it.
-cat > "$B4/control/postinst" <<'EOF'
+cat > "$B4/control/postinst" <<EOF
 #!/bin/sh
+PID="$ID4"
+EOF
+cat >> "$B4/control/postinst" <<'EOF'
+[ -z "$IPKG_OFFLINE_ROOT" ] && IPKG_OFFLINE_ROOT=/media/cryptofs/apps
 mount -o remount,rw / 2>/dev/null || true
 L=/etc/event.d/LunaSysMgr
 COMPAT=/usr/lib/ssl11/libssl_compat.so
@@ -430,18 +452,69 @@ if [ ! -f "$COMPAT" ]; then
     echo "luna-tls13 ERROR: /usr/lib/ssl11 stack not found -- install org.webosinternals.browser-tls13 first. Not patching."
     exit 1
 fi
+
+# ---- media-pipeline env-scrub wrapper (INDEPENDENT of the launcher patch) ----
+# The HTML5 media worker (/usr/bin/media-pipeline, fork+exec'd by WebAppMgr) inherits
+# WebAppMgr's ssl11 env but never needed OpenSSL (local files; http via libsoup->gnutls).
+# That inherited stack corrupts the worker's teardown, so media WEDGES after ~1 song
+# (Pandora/Plex/drPodder AND stock Music: one track plays, then the next worker dies at
+# init and the play button goes no-op until a Luna restart). Fix: install a wrapper AS
+# media-pipeline that restores the stock env and execs the real binary, moved to .real
+# and given its own LS2 role (roles are keyed to the exe path). This block runs BEFORE
+# the launcher "already patched" short-circuit below, so 1.0.0/1.1.0 installs get it on
+# upgrade. Detection keys on the .real FILE (reliable; grep-on-binary is not portable).
+MP=/usr/bin/media-pipeline
+MPW=""
+for R in "$IPKG_OFFLINE_ROOT" /media/cryptofs/apps /var ""; do
+    f="$R/usr/palm/applications/$PID/files/media-pipeline.wrap"
+    [ -f "$f" ] && { MPW="$f"; break; }
+done
+mp_role() {   # $1 = prv|pub ; derive the .real role from the stock one
+    rf="/usr/share/ls2/roles/$1/com.palm.mediad.pipeline.json"
+    [ -f "$rf" ] && sed 's#/usr/bin/media-pipeline#/usr/bin/media-pipeline.real#' "$rf" \
+        > "/usr/share/ls2/roles/$1/com.palm.mediad.pipeline.real.json"
+}
+if [ -z "$MPW" ]; then
+    echo "luna-tls13 WARNING: media-pipeline wrapper payload not found -- media fix NOT applied."
+elif [ ! -f "$MP" ]; then
+    echo "luna-tls13 NOTE: $MP not present -- skipping media fix."
+elif [ -f "$MP.real" ]; then
+    cp -f "$MPW" "$MP"; chmod 755 "$MP"          # already wrapped: refresh, keep .real intact
+    mp_role prv; mp_role pub
+    echo "luna-tls13: media-pipeline wrapper already installed (refreshed)."
+else
+    sz=$(wc -c < "$MP" 2>/dev/null || echo 0)
+    if [ "${sz:-0}" -lt 900000 ]; then
+        echo "luna-tls13 WARNING: $MP is only $sz bytes -- looks like a stray wrapper, not the real media worker. NOT wrapping (restore a stock media-pipeline to repair)."
+    else
+        mkdir -p /var/luna 2>/dev/null
+        [ -f /var/luna/media-pipeline.stock-orig ] || cp -p "$MP" /var/luna/media-pipeline.stock-orig
+        mv -f "$MP" "$MP.real"
+        cp -f "$MPW" "$MP"; chmod 755 "$MP"
+        if [ -s "$MP" ] && [ -f "$MP.real" ]; then
+            mp_role prv; mp_role pub
+            echo "luna-tls13: installed media-pipeline env-scrub wrapper + LS2 role (HTML5 media plays reliably)."
+        else
+            echo "luna-tls13 ERROR: wrapper install failed -- restoring real media-pipeline."
+            mv -f "$MP.real" "$MP" 2>/dev/null
+        fi
+    fi
+fi
+/usr/bin/ls-control scan-services 2>/dev/null || true
+# ---- end media-pipeline fix --------------------------------------------------
+
+# ---- LunaSysMgr launcher: route app WebKit through ssl11 (unchanged from 1.1.0) --
 if grep -q 'ssl11/libssl_compat.so' "$L" 2>/dev/null && grep -q 'LD_BIND_NOW=1' "$L" 2>/dev/null; then
-    echo "luna-tls13: LunaSysMgr launcher already patched (ssl11 + LD_BIND_NOW)."
+    echo "luna-tls13: LunaSysMgr launcher already patched (ssl11 + LD_BIND_NOW). REBOOT to activate the media fix if you have not rebooted since this install."
     exit 0
 fi
 mkdir -p /var/luna 2>/dev/null
 [ -f /var/luna/LunaSysMgr.tls13-orig ] || cp -p "$L" /var/luna/LunaSysMgr.tls13-orig
 if grep -q 'ssl11/libssl_compat.so' "$L" 2>/dev/null; then
-    # older luna-tls13 already added the ssl11 exports; just add the media-worker fix.
-    # LD_BIND_NOW=1: eager PLT binding. Without it, forked media-pipeline workers
-    # (HTML5 <audio class=media>: Pandora/Plex/drPodder) SIGSEGV in the glibc-2.8
-    # dynamic linker while LAZY-binding a symbol across the 0.9.8->1.1 OpenSSL shim,
-    # dying before gst_init -> "finding next song" forever. (Same fix as mojomail.)
+    # older luna-tls13 (1.0.0) already added the ssl11 exports; just add LD_BIND_NOW.
+    # LD_BIND_NOW=1: eager PLT binding, so LunaSysMgr/WebAppMgr resolve every symbol at
+    # exec instead of SIGSEGVing in the glibc-2.8 linker while LAZY-binding across the
+    # 0.9.8->1.1 shim. (The media worker no longer relies on this -- it's scrubbed above.)
     awk '/export LD_LIBRARY_PATH=\/usr\/lib\/ssl11/ && !bn { print; print "\texport LD_BIND_NOW=1"; bn=1; next } { print }' \
         "$L" > /tmp/lsm.bn.$$ && cat /tmp/lsm.bn.$$ > "$L"
     rm -f /tmp/lsm.bn.$$
@@ -459,7 +532,7 @@ else
     rm -f /tmp/lsm.tls13.$$
 fi
 if grep -q 'ssl11/libssl_compat.so' "$L" && grep -q 'LD_LIBRARY_PATH=/usr/lib/ssl11' "$L" && grep -q 'LD_BIND_NOW=1' "$L"; then
-    echo "luna-tls13: patched LunaSysMgr launcher (ssl11 + LD_BIND_NOW). REBOOT to route app WebKit through OpenSSL 1.1 / TLS 1.3 and fix HTML5 media playback."
+    echo "luna-tls13: patched LunaSysMgr launcher (ssl11 + LD_BIND_NOW). REBOOT to route app WebKit through OpenSSL 1.1 / TLS 1.3 (and to activate the media fix)."
 else
     echo "luna-tls13 WARNING: LD_PRELOAD anchor not found; restoring stock launcher (no change)."
     cp -f /var/luna/LunaSysMgr.tls13-orig "$L"
@@ -472,10 +545,24 @@ cat > "$B4/control/prerm" <<'EOF'
 #!/bin/sh
 mount -o remount,rw / 2>/dev/null || true
 L=/etc/event.d/LunaSysMgr
+
+# restore media-pipeline: move the real binary back over the wrapper, drop the .real
+# roles. (.real is the untouched real binary; the /var/luna copy is a secondary backup.)
+MP=/usr/bin/media-pipeline
+if [ -f "$MP.real" ]; then
+    mv -f "$MP.real" "$MP"
+elif [ -f /var/luna/media-pipeline.stock-orig ]; then
+    cp -f /var/luna/media-pipeline.stock-orig "$MP"; chmod 755 "$MP"
+fi
+rm -f /var/luna/media-pipeline.stock-orig
+rm -f /usr/share/ls2/roles/prv/com.palm.mediad.pipeline.real.json \
+      /usr/share/ls2/roles/pub/com.palm.mediad.pipeline.real.json
+/usr/bin/ls-control scan-services 2>/dev/null || true
+
 if [ -f /var/luna/LunaSysMgr.tls13-orig ]; then
     cp -f /var/luna/LunaSysMgr.tls13-orig "$L"
     rm -f /var/luna/LunaSysMgr.tls13-orig
-    echo "luna-tls13: restored stock LunaSysMgr launcher. REBOOT to return app TLS to stock."
+    echo "luna-tls13: restored stock LunaSysMgr launcher + media-pipeline. REBOOT to return app TLS to stock."
 else
     awk '
     /export LD_PRELOAD="/ { gsub(/ \/usr\/lib\/ssl11\/libssl_compat.so/, ""); print; next }
